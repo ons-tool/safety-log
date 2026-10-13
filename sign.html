@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교육 참석 서명</title>
+<script src="vendor/qrcode.min.js"></script>
+<script src="sig.js"></script>
+<style>
+  body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
+  .box { max-width:480px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:8px 0 16px; }
+  label { display:block; font-weight:600; margin:14px 0 6px; }
+  input { width:100%; box-sizing:border-box; padding:12px; font-size:16px; border:1px solid #bbb; border-radius:8px; background:#fff; }
+  #pad { width:100%; height:220px; border:2px dashed #999; border-radius:8px; touch-action:none; display:block; background:#fffef5; }
+  .btns { display:flex; gap:8px; margin-top:16px; }
+  button { flex:1; padding:14px; font-size:16px; border:0; border-radius:8px; background:#e5e7eb; }
+  .ok { background:#2563eb; color:#fff; }
+  .msg { text-align:center; padding:24px 0; font-size:17px; line-height:1.6; }
+  #qr { display:inline-block; background:#fff; padding:12px; border-radius:8px; }
+  .note { font-size:13px; color:#555; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="box" id="form">
+  <h1>✍️ 안전교육 참석 서명</h1>
+  <div class="note">입력한 내용은 어디에도 전송·저장되지 않습니다. 서명 후 화면에 뜨는 QR을 교육자에게 보여 주세요.</div>
+  <label>성명</label>
+  <input id="name" placeholder="이름 입력" autocomplete="off">
+  <label>소속</label>
+  <input id="dept" placeholder="소속 입력" autocomplete="off">
+  <label>사번</label>
+  <input id="emp" placeholder="사번 입력" inputmode="numeric" autocomplete="off">
+  <label>서명</label>
+  <canvas id="pad"></canvas>
+  <div class="btns"><button onclick="clearPad()">지우기</button><button class="ok" onclick="submit()">서명 QR 만들기</button></div>
+</div>
+<div class="box" id="result" hidden style="text-align:center">
+  <div class="msg" id="who"></div>
+  <div id="qr"></div>
+  <div class="note">교육자 PC 카메라에 이 QR을 비춰 주세요.<br>스캔이 끝나면 [완료]를 눌러 화면을 지워 주세요.</div>
+  <div class="btns"><button onclick="back()">다시 서명</button><button class="ok" onclick="finish()">완료</button></div>
+</div>
+<script>
+const sid = new URLSearchParams(location.search).get('s') || '';
+const pad = document.getElementById('pad'), ctx = pad.getContext('2d');
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let strokes = [], cur = null;
+
+function initPad(){
+  const r = pad.getBoundingClientRect(); pad.width = r.width*2; pad.height = r.height*2;
+  ctx.setTransform(2,0,0,2,0,0); ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+}
+function clearPad(){ ctx.clearRect(0,0,pad.width,pad.height); strokes = []; }
+const pt = e => { const b = pad.getBoundingClientRect(); return [e.clientX-b.left, e.clientY-b.top]; };
+pad.onpointerdown = e => { pad.setPointerCapture(e.pointerId); cur = [pt(e)]; strokes.push(cur); ctx.beginPath(); ctx.moveTo(...cur[0]); };
+pad.onpointermove = e => { if(cur){ const p = pt(e); cur.push(p); ctx.lineTo(...p); ctx.stroke(); } };
+pad.onpointerup = pad.onpointercancel = () => cur = null;
+
+function submit(){
+  const name = $('name').value.trim().replace(/\|/g,'');
+  if(!name) return alert('이름을 입력해 주세요.');
+  if(!strokes.some(s => s.length > 1)) return alert('서명을 입력해 주세요.');
+  const r = pad.getBoundingClientRect();
+  const text = packSig(sid, name, $('dept').value.trim(), $('emp').value.trim(), encodeStrokes(strokes, r.width, r.height));
+  $('qr').innerHTML = '';
+  try { new QRCode($('qr'), { text, width: Math.min(innerWidth - 56, 420), height: Math.min(innerWidth - 56, 420), correctLevel: QRCode.CorrectLevel.L }); }
+  catch(e){ return alert('서명이 너무 복잡합니다. 조금 간단하게 다시 서명해 주세요.'); }
+  $('who').innerHTML = `<b>${esc(name)}</b>님의 서명 QR`;
+  $('form').hidden = true; $('result').hidden = false;
+}
+function back(){ $('result').hidden = true; $('form').hidden = false; $('qr').innerHTML = ''; }
+function finish(){ document.body.innerHTML = '<div class="msg">✅ 완료되었습니다.<br>창을 닫아도 됩니다.</div>'; }
+
+initPad();
+</script>
+</body>
+</html>

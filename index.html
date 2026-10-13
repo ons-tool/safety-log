@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>안전교육일지</title>
+<script src="vendor/html2pdf.bundle.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script src="vendor/jsQR.js"></script>
+<style>
+  body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
+  .bar { position:sticky; top:0; z-index:9; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:10px; background:#1f2937; }
+  .bar button { padding:10px 16px; border:0; border-radius:6px; font-size:15px; cursor:pointer; background:#fff; }
+  .bar button.primary { background:#2563eb; color:#fff; }
+  #doc { width:794px; max-width:100%; margin:16px auto; background:#fff; padding:28px; box-sizing:border-box; }
+  table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  td, th { border:1px solid #333; padding:4px 6px; font-size:13px; vertical-align:middle; }
+  th { background:#e5e7eb; font-weight:600; letter-spacing:4px; }
+  input, textarea { width:100%; box-sizing:border-box; border:0; font:inherit; background:transparent; padding:2px; }
+  input:focus, textarea:focus { outline:2px solid #93c5fd; background:#f8fbff; }
+  textarea { resize:vertical; min-height:60px; line-height:1.5; }
+  .title { font-size:32px; font-weight:800; text-align:center; letter-spacing:8px; }
+  .date { text-align:center; margin-top:8px; }
+  .date #dateText { font-size:16px; font-weight:600; }
+  .date input { width:auto; border:1px solid #999; border-radius:4px; padding:4px; }
+  .pdf-mode .date input, .pdf-mode .sbtn { display:none !important; }
+  .appr td { height:22px; text-align:center; }
+  .appr .sign { height:60px; padding:0; }
+  .clr { font-size:11px; padding:2px 6px; margin-top:2px; }
+  .page2 { margin-top:30px; }
+  .att td { height:44px; text-align:center; padding:0 4px; }
+  .add { margin-top:8px; padding:8px 14px; }
+  .pdf-mode .clr, .pdf-mode .add, .pdf-mode .sub-hint { display:none !important; }
+  .sigbox { height:100%; display:flex; align-items:center; justify-content:center; }
+  .appr .sigbox { height:60px; } .att .sigbox { height:44px; }
+  .sigbox img { max-height:100%; max-width:100%; cursor:pointer; }
+  .sbtn { padding:4px 8px; border:1px solid #2563eb; color:#2563eb; background:#fff; border-radius:4px; font-size:12px; }
+  .lists { display:flex; gap:12px; margin-top:8px; align-items:flex-start; }
+  .col-att { flex:2.3; } .col-abs { flex:1; }
+  .ltitle { font-weight:700; margin-bottom:4px; }
+  #modal { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:20; display:flex; align-items:center; justify-content:center; }
+  #modal[hidden], .pop[hidden] { display:none; }
+  .pop { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:20; display:flex; align-items:center; justify-content:center; }
+  .memtbl td { padding:2px; text-align:center; } .memtbl input[type=text] { border-bottom:1px solid #ccc; }
+  .pop .mbox { max-height:90vh; overflow:auto; }
+  .pdf-mode #liveInfo { display:none !important; }
+  .mbox { background:#fff; border-radius:10px; padding:16px; width:min(92vw,520px); }
+  .mtitle { font-weight:700; margin-bottom:8px; }
+  #pad { width:100%; height:220px; border:2px dashed #999; border-radius:6px; touch-action:none; display:block; background:#fffef5; }
+  .mbtns { display:flex; gap:8px; margin-top:10px; } .mbtns button { flex:1; padding:12px; border:0; border-radius:6px; font-size:15px; background:#e5e7eb; }
+  .mbtns .ok { background:#2563eb; color:#fff; }
+  @media (max-width:600px){ .lists{flex-direction:column;} .col-abs{width:100%;} }
+  .sub-hint { font-size:12px; color:#666; text-align:right; }
+  .vert { writing-mode:vertical-rl; text-align:center; letter-spacing:10px; background:#e5e7eb; font-weight:600; }
+  .photos { display:grid; grid-template-columns:1fr 1fr; gap:6px; min-height:120px; }
+  .photos figure { margin:0; position:relative; }
+  .photos img { width:100%; height:200px; object-fit:cover; display:block; }
+  .photos .del { position:absolute; top:4px; right:4px; background:#dc2626; color:#fff; border:0; border-radius:50%; width:24px; height:24px; }
+  .photo-btns { display:flex; gap:6px; margin-bottom:6px; }
+  .photo-btns label { flex:1; text-align:center; padding:8px; background:#f3f4f6; border:1px dashed #888; border-radius:6px; cursor:pointer; }
+  .pdf-mode .photo-btns, .pdf-mode .del { display:none !important; }
+  .pdf-mode textarea { resize:none; overflow:hidden; }
+  /* PDF 전용 고정 레이아웃 (휴대폰 화면 규칙 무시) */
+  .pdf-sheet { width:733px !important; max-width:none !important; margin:0 !important; padding:2px 2px 12px !important; }
+  .pdf-sheet .page2 { padding-bottom:4px; }
+  .pdf-sheet td, .pdf-sheet th { font-size:12px !important; }
+  .pdf-sheet .title { font-size:30px !important; } .pdf-sheet .page2 .title { font-size:22px !important; }
+  .pdf-sheet .photos { grid-template-columns:1fr 1fr !important; } .pdf-sheet .photos img { height:180px; }
+  .pdf-sheet .lists { flex-direction:row !important; }
+  .pdf-sheet .pdf-text { white-space:pre-wrap; word-break:break-all; line-height:1.5; min-height:40px; padding:2px; }
+  .pdf-sheet .pdf-val { white-space:pre-wrap; word-break:break-all; }
+  .pdf-sheet .page2 { margin-top:0; }
+  @media (max-width:600px){ #doc{padding:10px;} td,th{font-size:11px;} .title{font-size:22px;} .photos{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button onclick="openMembers()">👥 팀원 목록</button>
+  <button onclick="openShare()">🔗 서명 링크 공유</button>
+  <button onclick="openScan()">📷 서명 QR 스캔</button>
+  <button onclick="savePdf()">📄 PDF 저장</button>
+  <button class="primary" onclick="sendMail()">✉️ 메일 전송</button>
+  <button onclick="if(confirm('입력 내용과 참석자 서명을 모두 지울까요? (팀원 목록은 유지됩니다)')){try{localStorage.removeItem('safetyLog');localStorage.removeItem('signSession');localStorage.removeItem('attRows')}catch(e){}location.reload()}">🗑 초기화</button>
+</div>
+
+<div id="doc">
+  <table style="border:0">
+    <tr>
+      <td style="border:0;width:60%">
+        <div class="title">안전교육일지</div>
+        <div class="date"><span id="dateText"></span> <input type="date" id="date"></div>
+      </td>
+      <td style="border:0;padding:0">
+        <table class="appr">
+          <tr><td rowspan="2" class="vert" style="width:28px;letter-spacing:4px">결재</td><td>담 당</td><td>팀 장</td></tr>
+          <tr><td class="sign"></td><td class="sign"></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table style="margin-top:12px">
+    <colgroup><col style="width:15%"><col style="width:35%"><col style="width:15%"><col style="width:35%"></colgroup>
+    <tr><th>본 부</th><td><input id="hq"></td><th>팀 명</th><td><input id="team"></td></tr>
+    <tr><th>교 육 자</th><td><input id="teacher"></td><th>장 소</th><td><input id="place"></td></tr>
+    <tr><th>교육인원</th><td colspan="3">대상 : <input id="cnt" style="width:60px"> 명 &nbsp; 참석 : <input id="att" style="width:60px"> 명 &nbsp;(<input id="note" style="width:45%" placeholder="참석명단 별첨 등">)</td></tr>
+    <tr><th>교육주제</th><td colspan="3"><input id="topic"></td></tr>
+    <tr><td class="vert">교육내용</td><td colspan="3"><textarea id="content" rows="22" placeholder="■ 대상 시스템 :&#10;■ 교육내용&#10;1. ..."></textarea></td></tr>
+    <tr><td class="vert">교육사진</td><td colspan="3">
+      <div class="photo-btns">
+        <label>📷 카메라 촬영<input type="file" accept="image/*" capture="environment" hidden onchange="addPhotos(this)"></label>
+        <label>🖼 앨범에서 선택<input type="file" accept="image/*" multiple hidden onchange="addPhotos(this)"></label>
+      </div>
+      <div class="photos" id="photos"></div>
+    </td></tr>
+  </table>
+
+  <div class="page2">
+    <div class="title" style="font-size:24px">교육 참석자 명단</div>
+    <div class="sub-hint">✍️ [서명하기]를 눌러 팝업에서 서명 · 서명을 누르면 다시 서명</div>
+    <div class="lists"><div class="col-att"><div class="ltitle">■ 참석자</div><table class="att">
+      <colgroup><col style="width:8%"><col style="width:24%"><col style="width:18%"><col style="width:18%"><col style="width:32%"></colgroup>
+      <thead><tr><th>번호</th><th>소 속</th><th>사 번</th><th>성 명</th><th>서 명</th></tr></thead>
+      <tbody id="attBody"></tbody>
+    </table>
+    <button class="add" onclick="addRow()">➕ 참석자 추가</button>
+    <button class="add" onclick="fillAbsent()">📋 미서명자 → 미참석자</button>
+    <div class="sub-hint" id="liveInfo"></div>
+    </div>
+    <div class="col-abs">
+      <div class="ltitle">■ 미참석자</div>
+      <table><tr><th style="width:40%">인원</th><td><input id="absCnt" style="width:50px;text-align:right"> 명</td></tr>
+      <tr><td colspan="2" style="padding:0"><textarea id="absNames" rows="12" placeholder="이름 (사유)&#10;예) 홍길동 (휴가)"></textarea></td></tr></table>
+    </div></div>
+  </div>
+</div>
+<div class="pop" id="memModal" hidden>
+  <div class="mbox">
+    <div class="mtitle">👥 팀원 목록 · 이번 교육 대상 체크</div>
+    <table class="memtbl"><thead><tr><th style="width:12%">대상</th><th>소 속</th><th>사 번</th><th>성 명</th><th style="width:10%"></th></tr></thead><tbody id="memBody"></tbody></table>
+    <button class="add" onclick="memRow()">➕ 팀원 추가</button>
+    <div class="mbtns"><button onclick="closePop('memModal')">닫기</button><button class="ok" onclick="saveMembers()">저장</button></div>
+  </div>
+</div>
+<div class="pop" id="shareModal" hidden>
+  <div class="mbox" style="text-align:center">
+    <div class="mtitle">🔗 휴대폰으로 QR을 찍어 서명</div>
+    <div id="qr" style="display:inline-block;margin:8px auto"></div>
+    <div id="shareUrl" style="word-break:break-all;font-size:13px;margin:8px 0"></div>
+    <div class="mbtns"><button onclick="copyLink()">링크 복사</button><button onclick="shareLink()">공유(카톡 등)</button></div>
+    <div class="mbtns"><button onclick="newSession()">새 서명 링크 발급</button><button class="ok" onclick="closePop('shareModal');openScan()">📷 스캔 시작</button></div>
+  </div>
+</div>
+<div class="pop" id="scanModal" hidden>
+  <div class="mbox" style="text-align:center">
+    <div class="mtitle">📷 참석자 휴대폰의 서명 QR을 카메라에 비춰 주세요</div>
+    <video id="cam" playsinline muted style="width:100%;max-height:50vh;background:#000;border-radius:6px"></video>
+    <select id="camSel" hidden onchange="startCam(this.value)" style="width:100%;padding:6px;margin-top:6px"></select>
+    <div id="scanMsg" style="margin:8px 0;font-size:14px;min-height:20px"></div>
+    <label class="add" style="display:block;border:1px dashed #888;border-radius:6px;cursor:pointer">📸 카메라 앱으로 찍어서 읽기 (카메라 권한이 안 될 때)<input type="file" accept="image/*" capture="environment" hidden onchange="scanFile(this)"></label>
+    <label class="add" style="display:block;border:1px dashed #888;border-radius:6px;cursor:pointer">🖼 QR 사진 파일로 읽기 (캡처·앨범 사진)<input type="file" accept="image/*" multiple hidden onchange="scanFile(this)"></label>
+    <div class="mbtns"><button class="ok" onclick="closeScan()">닫기</button></div>
+  </div>
+</div>
+<div id="modal" hidden>
+  <div class="mbox">
+    <div class="mtitle">서명해 주세요</div>
+    <canvas id="pad"></canvas>
+    <div class="mbtns"><button onclick="clearPad()">지우기</button><button onclick="closeSig()">취소</button><button class="ok" onclick="doneSig()">완료</button></div>
+  </div>
+</div>
+
+<script>
+const ids = ['date','hq','team','teacher','place','cnt','att','note','topic','content','absCnt','absNames'];
+let photos = [];
+const MAIL_TO = '';
+
+// 입력값 자동 저장/복원
+function save(){ try{ const o={}; ids.forEach(i=>o[i]=document.getElementById(i).value); localStorage.setItem('safetyLog',JSON.stringify(o)); }catch(e){} }
+try{ const o=JSON.parse(localStorage.getItem('safetyLog')||'{}'); ids.forEach(i=>{ if(o[i]!=null) document.getElementById(i).value=o[i]; }); }catch(e){}
+ids.forEach(i=>document.getElementById(i).addEventListener('input',save));
+
+// 사진: 용량 줄이기 위해 1280px로 축소
+function addPhotos(input){
+  [...input.files].forEach(f=>{
+    const img=new Image();
+    img.onload=()=>{
+      const s=Math.min(1,1280/Math.max(img.width,img.height));
+      const c=document.createElement('canvas'); c.width=img.width*s; c.height=img.height*s;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      photos.push(c.toDataURL('image/jpeg',0.8)); renderPhotos(); URL.revokeObjectURL(img.src);
+    };
+    img.src=URL.createObjectURL(f);
+  });
+  input.value='';
+}
+function renderPhotos(){
+  document.getElementById('photos').innerHTML = photos.map((p,i)=>
+    `<figure><img src="${p}"><button class="del" onclick="photos.splice(${i},1);renderPhotos()">×</button></figure>`).join('');
+}
+
+// 서명: [서명하기] 버튼 → 팝업에서 서명 → 칸에 이미지로 삽입
+const pad=document.getElementById('pad'), pctx=pad.getContext('2d');
+let target=null, drawn=false;
+function sigCell(){ return `<div class="sigbox"><button class="sbtn" onclick="openSig(this.parentNode)">✍️ 서명하기</button></div>`; }
+function openSig(box){
+  target=box; document.getElementById('modal').hidden=false;
+  const r=pad.getBoundingClientRect(); pad.width=r.width*2; pad.height=r.height*2;
+  pctx.setTransform(2,0,0,2,0,0); pctx.lineWidth=2.5; pctx.lineCap='round'; pctx.lineJoin='round'; drawn=false;
+}
+function closeSig(){ document.getElementById('modal').hidden=true; target=null; }
+function clearPad(){ pctx.clearRect(0,0,pad.width,pad.height); drawn=false; }
+function doneSig(){
+  if(!drawn){ alert('서명을 입력해 주세요.'); return; }
+  target.innerHTML=`<img src="${pad.toDataURL('image/png')}" title="눌러서 다시 서명">`;
+  target.querySelector('img').onclick=function(){ openSig(this.parentNode); };
+  closeSig();
+}
+(()=>{ let on=false;
+  const pt=e=>{ const b=pad.getBoundingClientRect(); return [e.clientX-b.left,e.clientY-b.top]; };
+  pad.onpointerdown=e=>{ on=true; pad.setPointerCapture(e.pointerId); pctx.beginPath(); pctx.moveTo(...pt(e)); };
+  pad.onpointermove=e=>{ if(on){ pctx.lineTo(...pt(e)); pctx.stroke(); drawn=true; } };
+  pad.onpointerup=pad.onpointercancel=()=>on=false;
+})();
+function addRow(dept='',name='',emp=''){
+  const tb=document.getElementById('attBody'), n=tb.rows.length+1;
+  const tr=tb.insertRow(); tr.dataset.name=name;
+  tr.innerHTML=`<td>${n}</td><td><input></td><td><input></td><td><input></td><td class="sigcell">${sigCell()}</td>`;
+  const [d,e,nm]=tr.querySelectorAll('input'); d.value=dept; e.value=emp; nm.value=name;
+  return tr;
+}
+document.querySelectorAll('.appr .sign').forEach(td=>td.innerHTML=sigCell());
+for(let i=0;i<10;i++) addRow();
+
+// 날짜: 달력 선택 → "2026년 10월 12일" 표시
+function showDate(){ const v=document.getElementById('date').value.split('-');
+  document.getElementById('dateText').textContent = v.length===3 ? `${v[0]}년 ${+v[1]}월 ${+v[2]}일` : '____년 __월 __일'; }
+const dt=document.getElementById('date'); if(!dt.value) dt.valueAsDate=new Date(); showDate();
+dt.addEventListener('change',()=>{ showDate(); save(); });
+
+function fileName(){
+  const v=i=>document.getElementById(i).value.trim();
+  return `안전교육일지_${v('date').replaceAll('-','')}_${v('team')||'팀'}.pdf`;
+}
+
+// PDF: 화면 크기와 무관하게 A4 폭(194mm≈733px)의 복제본을 만들어 변환
+async function makePdf(){
+  const doc=document.getElementById('doc'), clone=doc.cloneNode(true);
+  clone.removeAttribute('id'); clone.classList.add('pdf-mode','pdf-sheet');
+  // 입력칸 → 일반 글자로 바꿔 잘림 방지
+  const src=doc.querySelectorAll('input,textarea'), dst=clone.querySelectorAll('input,textarea');
+  dst.forEach((el,i)=>{
+    const o=src[i];
+    if(['file','date','checkbox'].includes(o.type)) return el.remove();
+    const t=document.createElement(o.tagName==='TEXTAREA'?'div':'span');
+    t.className=o.tagName==='TEXTAREA'?'pdf-text':'pdf-val'; t.textContent=o.value;
+    if(el.style.width) t.style.display='inline-block', t.style.minWidth=el.style.width;
+    el.replaceWith(t);
+  });
+  const wrap=document.createElement('div'); wrap.style.cssText='position:absolute;left:0;top:0;width:733px;z-index:-1';
+  const sx=scrollX, sy=scrollY; scrollTo(0,0);
+  wrap.appendChild(clone); document.body.appendChild(wrap);
+  try{
+    return await html2pdf().set({
+      margin:8, filename:fileName(), image:{type:'jpeg',quality:0.95},
+      html2canvas:{scale:2, width:733, windowWidth:733, scrollX:0, scrollY:0, x:0, y:0}, jsPDF:{unit:'mm',format:'a4'},
+      pagebreak:{mode:['css','legacy'], before:'.page2', avoid:['tr','figure','.att tr']}
+    }).from(clone).outputPdf('blob');
+  } finally { wrap.remove(); scrollTo(sx,sy); }
+}
+
+async function savePdf(){
+  const blob=await makePdf();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fileName(); a.click();
+}
+
+async function sendMail(){
+  const blob=await makePdf();
+  const file=new File([blob],fileName(),{type:'application/pdf'});
+  const subject=`[안전교육일지] ${document.getElementById('topic').value}`;
+  // 휴대폰: 공유창 → 메일앱에 PDF 첨부
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:subject, text:subject}); return; }catch(e){ if(e.name==='AbortError') return; }
+  }
+  // PC: PDF 다운로드 후 메일 창 열기 (첨부는 직접)
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fileName(); a.click();
+  alert('PC에서는 메일 자동 첨부가 불가합니다.\n다운로드된 PDF를 메일에 직접 첨부해 주세요.');
+  location.href=`mailto:${MAIL_TO}?subject=${encodeURIComponent(subject)}`;
+}
+</script>
+<script src="sig.js"></script>
+<script src="collect.js"></script>
+</body>
+</html>
