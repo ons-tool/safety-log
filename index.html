@@ -46,6 +46,7 @@
   .pdf-mode #liveInfo { display:none !important; }
   .mbox { background:#fff; border-radius:10px; padding:16px; width:min(92vw,520px); }
   .mtitle { font-weight:700; margin-bottom:8px; }
+  .guide { font-size:14px; line-height:1.6; } .guide h4 { margin:14px 0 4px; color:#1d4ed8; } .guide ol, .guide ul { margin:0; padding-left:20px; }
   #pad { width:100%; height:220px; border:2px dashed #999; border-radius:6px; touch-action:none; display:block; background:#fffef5; }
   .mbtns { display:flex; gap:8px; margin-top:10px; } .mbtns button { flex:1; padding:12px; border:0; border-radius:6px; font-size:15px; background:#e5e7eb; }
   .mbtns .ok { background:#2563eb; color:#fff; }
@@ -75,6 +76,7 @@
 </head>
 <body>
 <div class="bar">
+  <button onclick="document.getElementById('guideModal').hidden=false">❓ 이용 가이드</button>
   <button onclick="openMembers()">👥 팀원 목록</button>
   <button onclick="openShare()">🔗 서명 링크 공유</button>
   <button onclick="openScan()">📷 서명 QR 스캔</button>
@@ -149,6 +151,45 @@
     <div id="shareUrl" style="word-break:break-all;font-size:13px;margin:8px 0"></div>
     <div class="mbtns"><button onclick="copyLink()">링크 복사</button><button onclick="shareLink()">공유(카톡 등)</button></div>
     <div class="mbtns"><button onclick="newSession()">새 서명 링크 발급</button><button class="ok" onclick="closePop('shareModal');openScan()">📷 스캔 시작</button></div>
+  </div>
+</div>
+<div class="pop" id="guideModal" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="mbox guide" style="width:min(92vw,600px)">
+    <div class="mtitle">❓ 안전교육일지 이용 가이드</div>
+    <h4>1. 교육 전 준비 (교육자)</h4>
+    <ol>
+      <li><b>👥 팀원 목록</b>에 소속·사번·성명 입력 → 이번 교육 대상 체크 → <b>저장</b></li>
+      <li>"서명 링크를 발급할까요?" → <b>확인</b> (참석자 명단이 자동으로 만들어짐)</li>
+      <li>날짜·본부·팀명·교육자·장소·교육주제·교육내용 작성, <b>교육사진</b> 추가</li>
+    </ol>
+    <h4>2. 참석자 서명</h4>
+    <ol>
+      <li>교육자: <b>🔗 서명 링크 공유</b> → QR을 화면에 띄움</li>
+      <li>참석자: 휴대폰 카메라로 QR 촬영 → 성명·소속·사번 입력 → 서명 → <b>서명 QR 만들기</b></li>
+      <li>참석자: 휴대폰에 뜬 <b>서명 QR</b>을 교육자에게 보여줌</li>
+    </ol>
+    <h4>3. 서명 수합 (교육자)</h4>
+    <ol>
+      <li><b>📷 서명 QR 스캔</b> → 참석자 휴대폰 화면을 카메라에 비추면 명단에 자동 입력</li>
+      <li>카메라가 안 켜지면 <b>📸 카메라 앱으로 찍어서 읽기</b> 또는 <b>🖼 QR 사진 파일로 읽기</b></li>
+      <li>휴대폰이 없는 참석자는 명단의 <b>✍️ 서명하기</b>로 이 화면에서 바로 서명</li>
+    </ol>
+    <h4>4. 마무리</h4>
+    <ol>
+      <li><b>📋 미서명자 → 미참석자</b> → 미참석 사유 작성</li>
+      <li>결재란(담당·팀장) 서명</li>
+      <li><b>📄 PDF 저장</b> 또는 <b>✉️ 메일 전송</b></li>
+      <li>공용 PC라면 <b>🗑 초기화</b> (팀원 목록은 목록 창에서 직접 삭제)</li>
+    </ol>
+    <h4>⚠️ 알아두세요</h4>
+    <ul>
+      <li>입력 내용은 <b>이 기기의 브라우저에만</b> 저장되며 어떤 서버로도 전송되지 않습니다.</li>
+      <li>같은 기기·같은 브라우저에서만 이어서 작업할 수 있습니다. <b>교육사진과 결재란 서명은 새로고침하면 사라지니</b> PDF 저장 직전에 넣어 주세요.</li>
+      <li><b>🔗 새 서명 링크 발급</b>을 하면 이전 링크로 만든 서명 QR은 반영 시 확인을 묻습니다.</li>
+      <li>휴대폰 카메라가 안 켜지면: 카톡·네이버 앱 안이 아닌 <b>크롬·삼성인터넷·Safari</b>로 열고 카메라 권한을 허용하세요.</li>
+      <li>회사 Wi-Fi에서 안 열리면 Wi-Fi를 끄고 LTE로 접속하세요.</li>
+    </ul>
+    <div class="mbtns"><button class="ok" onclick="closePop('guideModal')">닫기</button></div>
   </div>
 </div>
 <div class="pop" id="scanModal" hidden>
