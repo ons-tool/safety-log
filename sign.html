@@ -65,7 +65,7 @@ function submit(){
   const r = pad.getBoundingClientRect();
   const text = packSig(sid, name, $('dept').value.trim(), $('emp').value.trim(), encodeStrokes(strokes, r.width, r.height));
   $('qr').innerHTML = '';
-  try { new QRCode($('qr'), { text, width: Math.min(innerWidth - 56, 420), height: Math.min(innerWidth - 56, 420), correctLevel: QRCode.CorrectLevel.L }); }
+  try { new QRCode($('qr'), { text, width: Math.min(innerWidth - 56, 420), height: Math.min(innerWidth - 56, 420), correctLevel: QRCode.CorrectLevel.M }); }
   catch(e){ return alert('서명이 너무 복잡합니다. 조금 간단하게 다시 서명해 주세요.'); }
   $('who').innerHTML = `<b>${esc(name)}</b>님의 서명 QR`;
   $('form').hidden = true; $('result').hidden = false;

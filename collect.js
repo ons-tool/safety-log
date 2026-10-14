@@ -132,21 +132,38 @@ function stopCam() {
   camStream = null;
 }
 function closeScan() { stopCam(); lastText = ''; closePop('scanModal'); }
+// 사진 속 QR 찾기: 전체/가운데 영역 × 여러 크기 × 대비 보정을 차례로 시도
+function findQR(src, w, h) {
+  const regions = [[0, 0, 1], [0.15, 0.15, 0.7], [0.25, 0.25, 0.5]]; // [x, y, 크기] 비율
+  for (const contrast of [false, true])
+    for (const [rx, ry, rs] of regions)
+      for (const max of [1000, 1600, 700]) {
+        const sw = w * rs, sh = h * rs;
+        const s = Math.min(1, max / Math.max(sw, sh));
+        const c = document.createElement('canvas'); c.width = Math.round(sw * s); c.height = Math.round(sh * s);
+        const g = c.getContext('2d', { willReadFrequently: true });
+        g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(src, w * rx, h * ry, sw, sh, 0, 0, c.width, c.height);
+        const img = g.getImageData(0, 0, c.width, c.height);
+        if (contrast) {
+          // 흑백 변환 후 밝기 범위를 늘려 반사·어두운 사진 보정
+          const d = img.data; let lo = 255, hi = 0;
+          for (let i = 0; i < d.length; i += 4) { const v = (d[i] * 3 + d[i + 1] * 6 + d[i + 2]) / 10; d[i] = v; if (v < lo) lo = v; if (v > hi) hi = v; }
+          const k = 255 / Math.max(1, hi - lo);
+          for (let i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = (d[i] - lo) * k;
+        }
+        const code = jsQR(img.data, c.width, c.height);
+        if (code) return code;
+      }
+  return null;
+}
 // 카메라가 안 될 때: QR 사진/캡처 파일에서 읽기
 function scanFile(input) {
   const msg = document.getElementById('scanMsg');
   [...input.files].forEach(f => {
     const img = new Image();
     img.onload = () => {
-      // 여러 크기로 시도 (캡처 화면이 크거나 QR이 작을 때 대비)
-      let code = null;
-      for (const max of [1600, 1000, 2400, 700]) {
-        const s = Math.min(1, max / Math.max(img.width, img.height));
-        const c = document.createElement('canvas'); c.width = img.width * s; c.height = img.height * s;
-        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
-        code = jsQR(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
-        if (code) break;
-      }
+      const code = findQR(img, img.naturalWidth, img.naturalHeight);
       const text = code ? applySig(code.data) : `⚠️ ${f.name}: QR을 찾지 못했습니다. QR 부분이 크고 선명하게 나오도록 캡처해 주세요.`;
       msg.textContent = text; msgHold = Date.now() + 8000;
       if (!text.startsWith('✅')) alert(text);
@@ -168,7 +185,7 @@ function applySig(text) {
   const [d, e, n] = tr.querySelectorAll('input');
   n.value = s.name; if (s.dept) d.value = s.dept; if (s.emp) e.value = s.emp;
   const box = tr.querySelector('.sigbox');
-  box.innerHTML = `<img src="${strokesToPng(s.strokes)}" title="눌러서 다시 서명">`;
+  box.innerHTML = `<img src="${strokesToPng(s.strokes, s.ver)}" title="눌러서 다시 서명">`;
   box.querySelector('img').onclick = function () { openSig(this.parentNode); };
   updateCount(); saveRows();
   return `✅ ${s.name}님 서명 반영 (${document.getElementById('att').value}명 완료)`;
