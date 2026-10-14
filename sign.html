@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>교육 참석 서명</title>
-<script src="vendor/qrcode-generator.min.js"></script>
-<script src="sig.js"></script>
+<script src="vendor/qrcode-generator.min.js?v=2"></script>
+<script src="sig.js?v=2"></script>
 <style>
   body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
   .box { max-width:480px; margin:0 auto; padding:16px; }
@@ -65,8 +65,13 @@ function submit(){
   const r = pad.getBoundingClientRect();
   const text = packSig(sid, name, $('dept').value.trim(), $('emp').value.trim(), encodeStrokes(strokes, r.width, r.height));
   $('qr').innerHTML = '';
+  if (typeof drawQR !== 'function' || typeof qrcode !== 'function')
+    return alert('화면 파일이 예전 버전으로 남아 있습니다. 페이지를 새로고침한 뒤 다시 서명해 주세요.');
   try { drawQR($('qr'), text, Math.min(innerWidth - 56, 420)); }
-  catch(e){ return alert('서명이 너무 복잡합니다. 조금 간단하게 다시 서명해 주세요.'); }
+  catch(e){
+    if (/overflow|length/i.test(String(e))) return alert('서명이 너무 복잡합니다. 조금 간단하게 다시 서명해 주세요.');
+    return alert('서명 QR을 만들지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.\n(' + e + ')');
+  }
   $('who').innerHTML = `<b>${esc(name)}</b>님의 서명 QR`;
   $('form').hidden = true; $('result').hidden = false;
 }
