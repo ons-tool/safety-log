@@ -100,4 +100,13 @@ function unpackSig(text) {
   return { ver, session, name, dept, emp, strokes: p[5] };
 }
 
+// QR 그리기: 칸을 정수 픽셀로 맞추고 흰 여백(4칸)을 둬 카메라 앱 인식률 확보
+// 데이터가 너무 길면 예외 발생
+function drawQR(el, text, maxPx, level = 'M') {
+  const qr = qrcode(0, level); qr.addData(text); qr.make();
+  const cell = Math.max(2, Math.floor(maxPx / (qr.getModuleCount() + 8)));
+  el.innerHTML = qr.createImgTag(cell, cell * 4);
+  el.querySelector('img').style.cssText = 'display:block;image-rendering:pixelated;background:#fff';
+}
+
 if (typeof module !== 'undefined') module.exports = { encodeStrokes, decodeStrokes, packSig, unpackSig, SIG_W, SIG_H };

@@ -63,7 +63,7 @@ function openShare() {
   const url = signUrl();
   document.getElementById('shareUrl').textContent = url;
   const q = document.getElementById('qr'); q.innerHTML = '';
-  new QRCode(q, { text: url, width: 220, height: 220 });
+  drawQR(q, url, Math.min(280, innerWidth - 80));
   document.getElementById('shareModal').hidden = false;
 }
 async function copyLink() {

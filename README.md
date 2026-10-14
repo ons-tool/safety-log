@@ -14,7 +14,7 @@
 - `collect.js` : 팀원 목록·서명 링크·QR 스캔 수합
 - `sign.html` : 참석자 서명 → 서명 QR 생성
 - `sig.js` : 서명 획 압축/복원
-- `vendor/` : html2pdf, qrcodejs, jsQR (외부 CDN 호출 없음)
+- `vendor/` : html2pdf, qrcode-generator, jsQR (외부 CDN 호출 없음)
 
 ## 주의
 - 이 저장소는 공개됩니다. 팀원 명단 등 개인정보를 파일에 넣지 마세요.
