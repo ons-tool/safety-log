@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>교육 참석 서명</title>
-<script src="vendor/qrcode-generator.min.js?v=2"></script>
-<script src="sig.js?v=2"></script>
+<script src="vendor/qrcode-generator.min.js?v=3"></script>
+<script src="sig.js?v=3"></script>
 <style>
   body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
   .box { max-width:480px; margin:0 auto; padding:16px; }
@@ -23,14 +23,16 @@
 </head>
 <body>
 <div class="box" id="form">
-  <h1>✍️ 안전교육 참석 서명</h1>
+  <h1 id="title">✍️ 안전교육 참석 서명</h1>
   <div class="note">입력한 내용은 어디에도 전송·저장되지 않습니다. 서명 후 화면에 뜨는 QR을 교육자에게 보여 주세요.</div>
   <label>성명</label>
   <input id="name" placeholder="이름 입력" autocomplete="off">
+  <div id="extra">
   <label>소속</label>
   <input id="dept" placeholder="소속 입력" autocomplete="off">
   <label>사번</label>
   <input id="emp" placeholder="사번 입력" inputmode="numeric" autocomplete="off">
+  </div>
   <label>서명</label>
   <canvas id="pad"></canvas>
   <div class="btns"><button onclick="clearPad()">지우기</button><button class="ok" onclick="submit()">서명 QR 만들기</button></div>
@@ -42,7 +44,15 @@
   <div class="btns"><button onclick="back()">다시 서명</button><button class="ok" onclick="finish()">완료</button></div>
 </div>
 <script>
-const sid = new URLSearchParams(location.search).get('s') || '';
+const qs = new URLSearchParams(location.search);
+const sid = qs.get('s') || '';
+// 결재 서명 링크(r=담당/팀장)면 소속·사번 없이 성명과 서명만 받음
+const role = ['담당', '팀장'].includes(qs.get('r')) ? qs.get('r') : '';
+if (role) {
+  document.getElementById('title').textContent = `✍️ 결재 서명 (${role})`;
+  document.title = `결재 서명 (${role})`;
+  document.getElementById('extra').hidden = true;
+}
 const pad = document.getElementById('pad'), ctx = pad.getContext('2d');
 const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -63,7 +73,9 @@ function submit(){
   if(!name) return alert('이름을 입력해 주세요.');
   if(!strokes.some(s => s.length > 1)) return alert('서명을 입력해 주세요.');
   const r = pad.getBoundingClientRect();
-  const text = packSig(sid, name, $('dept').value.trim(), $('emp').value.trim(), encodeStrokes(strokes, r.width, r.height));
+  const text = role
+    ? packSig(sid, name, '', '', encodeStrokes(strokes, r.width, r.height), role)
+    : packSig(sid, name, $('dept').value.trim(), $('emp').value.trim(), encodeStrokes(strokes, r.width, r.height));
   $('qr').innerHTML = '';
   if (typeof drawQR !== 'function' || typeof qrcode !== 'function')
     return alert('화면 파일이 예전 버전으로 남아 있습니다. 페이지를 새로고침한 뒤 다시 서명해 주세요.');
@@ -72,7 +84,7 @@ function submit(){
     if (/overflow|length/i.test(String(e))) return alert('서명이 너무 복잡합니다. 조금 간단하게 다시 서명해 주세요.');
     return alert('서명 QR을 만들지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.\n(' + e + ')');
   }
-  $('who').innerHTML = `<b>${esc(name)}</b>님의 서명 QR`;
+  $('who').innerHTML = role ? `<b>${esc(name)}</b>님의 결재(${role}) 서명 QR` : `<b>${esc(name)}</b>님의 서명 QR`;
   $('form').hidden = true; $('result').hidden = false;
 }
 function back(){ $('result').hidden = true; $('form').hidden = false; $('qr').innerHTML = ''; }

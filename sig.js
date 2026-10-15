@@ -89,15 +89,20 @@ function strokesToPng(b64, ver) {
   return c.toDataURL('image/png');
 }
 
-function packSig(session, name, dept, emp, strokesB64) {
-  return ['SG2', session, name, dept, emp].map(encodeURIComponent).join('|') + '|' + strokesB64;
+// role: 결재 서명일 때 '담당'/'팀장' (참석자 서명은 비움 → 기존 6칸 형식 그대로)
+function packSig(session, name, dept, emp, strokesB64, role) {
+  const f = ['SG2', session, name, dept, emp];
+  if (role) f.push(role);
+  return f.map(encodeURIComponent).join('|') + '|' + strokesB64;
 }
 
 function unpackSig(text) {
   const p = String(text).split('|');
-  if (p.length !== 6 || (p[0] !== 'SG1' && p[0] !== 'SG2')) return null;
-  const [ver, session, name, dept, emp] = p.slice(0, 5).map(decodeURIComponent);
-  return { ver, session, name, dept, emp, strokes: p[5] };
+  if ((p.length !== 6 && p.length !== 7) || (p[0] !== 'SG1' && p[0] !== 'SG2')) return null;
+  try {
+    const [ver, session, name, dept, emp, role] = p.slice(0, -1).map(decodeURIComponent);
+    return { ver, session, name, dept, emp, role: role || '', strokes: p[p.length - 1] };
+  } catch (e) { return null; }
 }
 
 // QR 그리기: 칸을 정수 픽셀로 맞추고 흰 여백(4칸)을 둬 카메라 앱 인식률 확보

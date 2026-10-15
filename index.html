@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>안전교육일지</title>
 <script src="vendor/html2pdf.bundle.min.js"></script>
-<script src="vendor/qrcode-generator.min.js?v=2"></script>
+<script src="vendor/qrcode-generator.min.js?v=3"></script>
 <script src="vendor/jsQR.js"></script>
 <style>
   body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
@@ -30,7 +30,11 @@
   .page2 { margin-top:30px; }
   .att td { height:44px; text-align:center; padding:0 4px; }
   .add { margin-top:8px; padding:8px 14px; }
-  .pdf-mode .clr, .pdf-mode .add, .pdf-mode .sub-hint { display:none !important; }
+  .pdf-mode .clr, .pdf-mode .add, .pdf-mode .sub-hint, .pdf-mode .rdel { display:none !important; }
+  .att td:first-child { white-space:nowrap; padding:0 2px; }
+  .rdel { margin-left:3px; padding:0 4px; border:1px solid #dc2626; color:#dc2626; background:#fff; border-radius:3px; font-size:11px; line-height:16px; cursor:pointer; }
+  .appr-btns { flex-direction:column; gap:3px; } .appr-btns .sbtn { padding:2px 6px; font-size:11px; white-space:nowrap; }
+  @media (max-width:600px){ .appr-btns .sbtn { padding:1px 3px; font-size:10px; } .rdel { padding:0 2px; margin-left:1px; } }
   .sigbox { height:100%; display:flex; align-items:center; justify-content:center; }
   .appr .sigbox { height:60px; } .att .sigbox { height:44px; }
   .sigbox img { max-height:100%; max-width:100%; cursor:pointer; }
@@ -77,12 +81,11 @@
 <body>
 <div class="bar">
   <button onclick="document.getElementById('guideModal').hidden=false">❓ 이용 가이드</button>
-  <button onclick="openMembers()">👥 팀원 목록</button>
   <button onclick="openShare()">🔗 서명 링크 공유</button>
   <button onclick="openScan()">📷 서명 QR 스캔</button>
   <button onclick="savePdf()">📄 PDF 저장</button>
   <button class="primary" onclick="sendMail()">✉️ 메일 전송</button>
-  <button onclick="if(confirm('입력 내용과 참석자 서명을 모두 지울까요? (팀원 목록은 유지됩니다)')){try{localStorage.removeItem('safetyLog');localStorage.removeItem('signSession');localStorage.removeItem('attRows')}catch(e){}location.reload()}">🗑 초기화</button>
+  <button onclick="if(confirm('입력 내용과 참석자 명단·서명을 모두 지울까요? (진행 중인 서명 링크도 새로 바뀝니다)')){try{localStorage.removeItem('safetyLog');localStorage.removeItem('signSession');localStorage.removeItem('attRows')}catch(e){}location.reload()}">🗑 초기화</button>
 </div>
 
 <div id="doc">
@@ -95,7 +98,7 @@
       <td style="border:0;padding:0">
         <table class="appr">
           <tr><td rowspan="2" class="vert" style="width:28px;letter-spacing:4px">결재</td><td>담 당</td><td>팀 장</td></tr>
-          <tr><td class="sign"></td><td class="sign"></td></tr>
+          <tr><td class="sign" data-role="담당"></td><td class="sign" data-role="팀장"></td></tr>
         </table>
       </td>
     </tr>
@@ -119,13 +122,14 @@
 
   <div class="page2">
     <div class="title" style="font-size:24px">교육 참석자 명단</div>
-    <div class="sub-hint">✍️ [서명하기]를 눌러 팝업에서 서명 · 서명을 누르면 다시 서명</div>
+    <div class="sub-hint">📷 서명 QR을 스캔하면 빈 칸에 차례로 입력 · ✍️ [서명하기]로 이 화면에서 직접 서명 · 서명을 누르면 다시 서명</div>
     <div class="lists"><div class="col-att"><div class="ltitle">■ 참석자</div><table class="att">
-      <colgroup><col style="width:8%"><col style="width:24%"><col style="width:18%"><col style="width:18%"><col style="width:32%"></colgroup>
+      <colgroup><col style="width:10%"><col style="width:22%"><col style="width:18%"><col style="width:18%"><col style="width:32%"></colgroup>
       <thead><tr><th>번호</th><th>소 속</th><th>사 번</th><th>성 명</th><th>서 명</th></tr></thead>
       <tbody id="attBody"></tbody>
     </table>
-    <button class="add" onclick="addRow()">➕ 참석자 추가</button>
+    <button class="add" onclick="addRow();saveRows()">➕ 참석자 추가</button>
+    <button class="add" onclick="delLastRow()">➖ 마지막 행 삭제</button>
     <button class="add" onclick="fillAbsent()">📋 미서명자 → 미참석자</button>
     <div class="sub-hint" id="liveInfo"></div>
     </div>
@@ -136,21 +140,13 @@
     </div></div>
   </div>
 </div>
-<div class="pop" id="memModal" hidden>
-  <div class="mbox">
-    <div class="mtitle">👥 팀원 목록 · 이번 교육 대상 체크</div>
-    <table class="memtbl"><thead><tr><th style="width:12%">대상</th><th>소 속</th><th>사 번</th><th>성 명</th><th style="width:10%"></th></tr></thead><tbody id="memBody"></tbody></table>
-    <button class="add" onclick="memRow()">➕ 팀원 추가</button>
-    <div class="mbtns"><button onclick="closePop('memModal')">닫기</button><button class="ok" onclick="saveMembers()">저장</button></div>
-  </div>
-</div>
 <div class="pop" id="shareModal" hidden>
   <div class="mbox" style="text-align:center">
-    <div class="mtitle">🔗 휴대폰으로 QR을 찍어 서명</div>
+    <div class="mtitle" id="shareTitle">🔗 휴대폰으로 QR을 찍어 서명</div>
     <div id="qr" style="display:inline-block;margin:8px auto"></div>
     <div id="shareUrl" style="word-break:break-all;font-size:13px;margin:8px 0"></div>
     <div class="mbtns"><button onclick="copyLink()">링크 복사</button><button onclick="shareLink()">공유(카톡 등)</button></div>
-    <div class="mbtns"><button onclick="newSession()">새 서명 링크 발급</button><button class="ok" onclick="closePop('shareModal');openScan()">📷 스캔 시작</button></div>
+    <div class="mbtns"><button onclick="newSession(true)">새 서명 링크 발급</button><button class="ok" onclick="closePop('shareModal');openScan()">📷 스캔 시작</button></div>
   </div>
 </div>
 <div class="pop" id="guideModal" hidden onclick="if(event.target===this)this.hidden=true">
@@ -158,9 +154,9 @@
     <div class="mtitle">❓ 안전교육일지 이용 가이드</div>
     <h4>1. 교육 전 준비 (교육자)</h4>
     <ol>
-      <li><b>👥 팀원 목록</b>에 소속·사번·성명 입력 → 이번 교육 대상 체크 → <b>저장</b></li>
-      <li>"서명 링크를 발급할까요?" → <b>확인</b> (참석자 명단이 자동으로 만들어짐)</li>
       <li>날짜·본부·팀명·교육자·장소·교육주제·교육내용 작성, <b>교육사진</b> 추가</li>
+      <li>참석자 명단은 기본 20행 · 하단 <b>➕ 참석자 추가</b> / <b>➖ 마지막 행 삭제</b>, 행 번호 옆 <b>✕</b>로 그 행 삭제</li>
+      <li>명단에 이름을 미리 적어 두면, 같은 이름의 서명 QR이 그 행에 들어갑니다 (안 적으면 빈 행에 차례로 입력)</li>
     </ol>
     <h4>2. 참석자 서명</h4>
     <ol>
@@ -177,9 +173,9 @@
     <h4>4. 마무리</h4>
     <ol>
       <li><b>📋 미서명자 → 미참석자</b> → 미참석 사유 작성</li>
-      <li>결재란(담당·팀장) 서명</li>
+      <li>결재란(담당·팀장): 칸의 <b>📱 QR</b> → 결재자가 휴대폰으로 서명 → 서명 QR을 <b>📷 서명 QR 스캔</b> (또는 <b>✍️ 서명</b>으로 직접 서명) · 결재 서명을 누르면 지우고 다시 받을 수 있음</li>
       <li><b>📄 PDF 저장</b> 또는 <b>✉️ 메일 전송</b></li>
-      <li>공용 PC라면 <b>🗑 초기화</b> (팀원 목록은 목록 창에서 직접 삭제)</li>
+      <li>공용 PC라면 <b>🗑 초기화</b></li>
     </ol>
     <h4>⚠️ 알아두세요</h4>
     <ul>
@@ -253,9 +249,17 @@ function closeSig(){ document.getElementById('modal').hidden=true; target=null; 
 function clearPad(){ pctx.clearRect(0,0,pad.width,pad.height); drawn=false; }
 function doneSig(){
   if(!drawn){ alert('서명을 입력해 주세요.'); return; }
-  target.innerHTML=`<img src="${pad.toDataURL('image/png')}" title="눌러서 다시 서명">`;
-  target.querySelector('img').onclick=function(){ openSig(this.parentNode); };
+  setSigImg(target, pad.toDataURL('image/png'));
   closeSig();
+}
+// 서명 이미지 넣기: 참석자 칸은 누르면 다시 서명, 결재란은 누르면 서명을 지우고 버튼(직접/QR)으로 되돌림
+function setSigImg(box, src){
+  const appr=box.closest('.appr td.sign');
+  box.innerHTML=`<img src="${src}" title="${appr?'눌러서 서명 지우기':'눌러서 다시 서명'}">`;
+  box.querySelector('img').onclick = appr
+    ? function(){ if(confirm(`${appr.dataset.role} 결재 서명을 지우고 다시 받을까요?`)) appr.innerHTML=apprCell(appr.dataset.role); }
+    : function(){ openSig(this.parentNode); };
+  if(!appr && typeof saveRows==='function'){ updateCount(); saveRows(); }
 }
 (()=>{ let on=false;
   const pt=e=>{ const b=pad.getBoundingClientRect(); return [e.clientX-b.left,e.clientY-b.top]; };
@@ -263,15 +267,33 @@ function doneSig(){
   pad.onpointermove=e=>{ if(on){ pctx.lineTo(...pt(e)); pctx.stroke(); drawn=true; } };
   pad.onpointerup=pad.onpointercancel=()=>on=false;
 })();
+// 결재란: 직접 서명 + 결재자 휴대폰 QR 서명
+function apprCell(role){ return `<div class="sigbox appr-btns"><button class="sbtn" onclick="openSig(this.parentNode)">✍️ 서명</button><button class="sbtn" onclick="openShare('${role}')">📱 QR</button></div>`; }
+const ROWS_DEFAULT=20;
 function addRow(dept='',name='',emp=''){
-  const tb=document.getElementById('attBody'), n=tb.rows.length+1;
+  const tb=document.getElementById('attBody');
   const tr=tb.insertRow(); tr.dataset.name=name;
-  tr.innerHTML=`<td>${n}</td><td><input></td><td><input></td><td><input></td><td class="sigcell">${sigCell()}</td>`;
+  tr.innerHTML=`<td><span class="rn"></span><button class="rdel" title="이 행 삭제" onclick="delRow(this.closest('tr'))">✕</button></td><td><input></td><td><input></td><td><input></td><td class="sigcell">${sigCell()}</td>`;
   const [d,e,nm]=tr.querySelectorAll('input'); d.value=dept; e.value=emp; nm.value=name;
+  renumber();
   return tr;
 }
-document.querySelectorAll('.appr .sign').forEach(td=>td.innerHTML=sigCell());
-for(let i=0;i<10;i++) addRow();
+function renumber(){ [...document.getElementById('attBody').rows].forEach((tr,i)=>tr.querySelector('.rn').textContent=i+1); }
+function delRow(tr){
+  const name=tr.querySelectorAll('input')[2].value.trim(), signed=!!tr.querySelector('.sigbox img');
+  if((name||signed||tr.querySelectorAll('input')[0].value.trim()||tr.querySelectorAll('input')[1].value.trim())
+     && !confirm(`${tr.querySelector('.rn').textContent}번 ${name?name+'님 ':''}행을 삭제할까요?${signed?'\n(받은 서명도 함께 지워집니다)':''}`)) return;
+  tr.remove(); renumber();
+  if(typeof updateCount==='function') updateCount();
+  if(typeof saveRows==='function') saveRows();
+}
+function delLastRow(){
+  const tb=document.getElementById('attBody');
+  if(!tb.rows.length) return alert('삭제할 행이 없습니다.');
+  delRow(tb.rows[tb.rows.length-1]);
+}
+document.querySelectorAll('.appr .sign').forEach(td=>td.innerHTML=apprCell(td.dataset.role));
+for(let i=0;i<ROWS_DEFAULT;i++) addRow();
 
 // 날짜: 달력 선택 → "2026년 10월 12일" 표시
 function showDate(){ const v=document.getElementById('date').value.split('-');
@@ -288,6 +310,8 @@ function fileName(){
 async function makePdf(){
   const doc=document.getElementById('doc'), clone=doc.cloneNode(true);
   clone.removeAttribute('id'); clone.classList.add('pdf-mode','pdf-sheet');
+  // 복제본 안의 id 제거 (원본 명단 #attBody 등과 겹쳐 저장·집계 코드가 복제본을 읽지 않도록)
+  clone.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
   // 입력칸 → 일반 글자로 바꿔 잘림 방지
   const src=doc.querySelectorAll('input,textarea'), dst=clone.querySelectorAll('input,textarea');
   dst.forEach((el,i)=>{
@@ -329,7 +353,7 @@ async function sendMail(){
   location.href=`mailto:${MAIL_TO}?subject=${encodeURIComponent(subject)}`;
 }
 </script>
-<script src="sig.js?v=2"></script>
-<script src="collect.js?v=2"></script>
+<script src="sig.js?v=3"></script>
+<script src="collect.js?v=3"></script>
 </body>
 </html>

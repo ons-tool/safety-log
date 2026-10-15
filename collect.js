@@ -1,66 +1,36 @@
-// 서명 수합 (서버 없음): 팀원 목록은 이 PC 브라우저에만 저장 → 서명 링크 QR 공유
-// → 참석자 휴대폰에서 서명 QR 생성 → 이 PC 카메라로 스캔해 명단에 반영
+// 서명 수합 (서버 없음): 서명 링크 QR 공유 → 참석자·결재자 휴대폰에서 서명 QR 생성
+// → 이 기기 카메라로 스캔해 참석자 명단 / 결재란에 반영 (데이터는 이 브라우저에만 저장)
 const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
 };
+store.del('members'); // 예전 팀원 목록 기능에서 저장한 명단은 더 이상 쓰지 않으므로 삭제
+
+// ── 서명 링크 (링크에는 세션 코드만 들어감, 개인정보 없음) ──
+const newCode = () => Math.random().toString(36).slice(2, 8).padEnd(6, '0');
 let sessionId = store.get('signSession', null);
+if (!sessionId) { sessionId = newCode(); store.set('signSession', sessionId); }
+let shareRole = ''; // '' = 참석자, '담당' / '팀장' = 결재
 
 function closePop(id) { document.getElementById(id).hidden = true; }
 
-// ── 팀원 목록 (이 PC에만 저장) ──
-function memRow(dept = '', emp = '', name = '', checked = true) {
-  const tr = document.getElementById('memBody').insertRow();
-  tr.innerHTML = `<td><input type="checkbox" ${checked ? 'checked' : ''}></td><td><input type="text" value="${esc(dept)}"></td><td><input type="text" value="${esc(emp)}"></td>
-    <td><input type="text" value="${esc(name)}"></td><td><button onclick="this.closest('tr').remove()">✕</button></td>`;
-}
-function openMembers() {
-  const list = store.get('members', []);
-  document.getElementById('memBody').innerHTML = '';
-  list.forEach(m => memRow(m.dept, m.emp, m.name));
-  if (!list.length) memRow();
-  document.getElementById('memModal').hidden = false;
-}
-function readMembers() {
-  return [...document.querySelectorAll('#memBody tr')].map(tr => {
-    const [chk, d, e, n] = tr.querySelectorAll('input');
-    return { dept: d.value.trim(), emp: e.value.trim(), name: n.value.trim(), on: chk.checked };
-  }).filter(m => m.name);
-}
-function saveMembers() {
-  const all = readMembers();
-  store.set('members', all.map(({ dept, emp, name }) => ({ dept, emp, name })));
-  const targets = all.filter(m => m.on);
-  if (confirm(`저장했습니다. (이 PC에만 저장됨)\n체크한 ${targets.length}명으로 참석자 명단을 새로 만들고 서명 링크를 발급할까요?`)) {
-    closePop('memModal');
-    newSession(targets);
-  }
-}
-
-// ── 서명 링크 (링크에는 세션 코드만 들어감, 개인정보 없음) ──
-function rowsData() {
-  return [...document.querySelectorAll('#attBody tr')].map(tr => {
-    const [d, e, n] = tr.querySelectorAll('input'); return { dept: d.value.trim(), emp: e.value.trim(), name: n.value.trim() };
-  }).filter(m => m.name);
-}
-function newSession(targets) {
-  if (!Array.isArray(targets)) {
-    if (!confirm('새 링크를 발급하면 이전 링크로 만든 서명 QR은 스캔되지 않습니다. 계속할까요?')) return;
-    targets = rowsData();
-  }
-  sessionId = Math.random().toString(36).slice(2, 8);
+function newSession(ask) {
+  if (ask && !confirm('새 링크를 발급하면 이전 링크로 만든 서명 QR은 스캔할 때 반영 여부를 묻습니다.\n(명단과 이미 받은 서명은 그대로 유지됩니다) 계속할까요?')) return;
+  sessionId = newCode();
   store.set('signSession', sessionId);
-  const tb = document.getElementById('attBody'); tb.innerHTML = '';
-  targets.forEach(m => addRow(m.dept, m.name, m.emp));
-  for (let i = targets.length; i < 5; i++) addRow();
-  document.getElementById('cnt').value = targets.length; save();
-  saveRows(); openShare();
+  openShare(shareRole);
 }
-function signUrl() { return new URL(`sign.html?s=${sessionId}`, location.href).href; }
-function openShare() {
-  if (!sessionId) return alert('먼저 [👥 팀원 목록]에서 교육 대상을 체크하고 저장해 주세요.');
-  const url = signUrl();
+function signUrl(role) {
+  return new URL(`sign.html?s=${sessionId}` + (role ? `&r=${encodeURIComponent(role)}` : ''), location.href).href;
+}
+function openShare(role) {
+  shareRole = role === '담당' || role === '팀장' ? role : '';
+  const url = signUrl(shareRole);
+  document.getElementById('shareTitle').textContent = shareRole
+    ? `📱 결재(${shareRole}) 서명 · 결재자가 휴대폰으로 QR을 찍어 서명`
+    : '🔗 휴대폰으로 QR을 찍어 서명 (참석자)';
   document.getElementById('shareUrl').textContent = url;
   const q = document.getElementById('qr'); q.innerHTML = '';
   drawQR(q, url, Math.min(280, innerWidth - 80));
@@ -72,14 +42,13 @@ async function copyLink() {
 }
 async function shareLink() {
   const url = document.getElementById('shareUrl').textContent;
-  if (navigator.share) { try { await navigator.share({ title: '안전교육 참석 서명', url }); } catch (e) {} }
+  if (navigator.share) { try { await navigator.share({ title: shareRole ? `안전교육일지 결재 서명 (${shareRole})` : '안전교육 참석 서명', url }); } catch (e) {} }
   else copyLink();
 }
 
 // ── 서명 QR 스캔 ──
 let camStream = null, scanTimer = null, lastText = '', msgHold = 0;
 async function openScan() {
-  if (!sessionId) return alert('먼저 [👥 팀원 목록]에서 교육 대상을 체크하고 저장해 주세요.');
   const msg = document.getElementById('scanMsg'), video = document.getElementById('cam');
   document.getElementById('scanModal').hidden = false;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
@@ -176,23 +145,32 @@ function scanFile(input) {
 function applySig(text) {
   const s = unpackSig(text);
   if (!s) return '⚠️ 서명 QR이 아닙니다.';
-  if (s.session !== sessionId && !confirm(`${s.name}님의 서명 QR은 현재 서명 링크(${sessionId})가 아닌 다른 링크(${s.session || '코드 없음'})로 만들어졌습니다.\n그래도 명단에 반영할까요?`))
+  if (s.session !== sessionId && !confirm(`${s.name}님의 서명 QR은 현재 서명 링크(${sessionId})가 아닌 다른 링크(${s.session || '코드 없음'})로 만들어졌습니다.\n그래도 반영할까요?`))
     return `⚠️ ${s.name}님: 다른 서명 링크로 만든 QR이라 반영하지 않았습니다.`;
+  let png;
+  try { png = strokesToPng(s.strokes, s.ver); } catch (e) { return '⚠️ 서명 QR 내용이 손상되었습니다. 다시 서명해 주세요.'; }
+  // 결재 서명 → 결재란
+  if (s.role) {
+    const cell = document.querySelector(`.appr td.sign[data-role="${s.role}"]`);
+    if (!cell) return `⚠️ 알 수 없는 결재 구분입니다: ${s.role}`;
+    if (cell.querySelector('img') && !confirm(`${s.role} 결재란에 이미 서명이 있습니다. ${s.name}님 서명으로 바꿀까요?`)) return `${s.role} 결재란: 기존 서명 유지`;
+    if (!cell.querySelector('.sigbox')) cell.innerHTML = apprCell(s.role);
+    setSigImg(cell.querySelector('.sigbox'), png);
+    return `✅ 결재(${s.role}) ${s.name}님 서명 반영`;
+  }
+  // 참석자 서명 → 같은 이름 행, 없으면 첫 빈 행, 없으면 행 추가
   const tb = document.getElementById('attBody');
   let tr = [...tb.rows].find(t => t.querySelectorAll('input')[2].value.trim() === s.name);
   if (tr && tr.querySelector('.sigbox img') && !confirm(`${s.name}님은 이미 서명했습니다. 새 서명으로 바꿀까요?`)) return `${s.name}님: 기존 서명 유지`;
-  if (!tr) tr = [...tb.rows].find(t => !t.querySelectorAll('input')[2].value.trim()) || addRow();
+  if (!tr) tr = [...tb.rows].find(t => !t.querySelectorAll('input')[2].value.trim() && !t.querySelector('.sigbox img')) || addRow();
   const [d, e, n] = tr.querySelectorAll('input');
   n.value = s.name; if (s.dept) d.value = s.dept; if (s.emp) e.value = s.emp;
-  const box = tr.querySelector('.sigbox');
-  box.innerHTML = `<img src="${strokesToPng(s.strokes, s.ver)}" title="눌러서 다시 서명">`;
-  box.querySelector('img').onclick = function () { openSig(this.parentNode); };
-  updateCount(); saveRows();
+  setSigImg(tr.querySelector('.sigbox'), png);
   return `✅ ${s.name}님 서명 반영 (${document.getElementById('att').value}명 완료)`;
 }
 function updateCount() {
   const rows = [...document.querySelectorAll('#attBody tr')].filter(tr => tr.querySelectorAll('input')[2].value.trim());
-  const signed = rows.filter(tr => tr.querySelector('.sigbox img')).length;
+  const signed = [...document.querySelectorAll('#attBody tr')].filter(tr => tr.querySelector('.sigbox img')).length;
   document.getElementById('att').value = signed; save();
   document.getElementById('liveInfo').textContent = `📷 스캔 수합 · 서명 ${signed} / ${rows.length}명`;
 }
@@ -208,7 +186,7 @@ document.getElementById('attBody').addEventListener('input', saveRows);
 new MutationObserver(saveRows).observe(document.getElementById('attBody'), { childList: true, subtree: true });
 (() => {
   const rows = store.get('attRows', null);
-  if (!rows) return;
+  if (!Array.isArray(rows)) return;
   const tb = document.getElementById('attBody'); tb.innerHTML = '';
   rows.forEach(r => {
     const tr = addRow(r.dept, r.name, r.emp);
@@ -218,8 +196,11 @@ new MutationObserver(saveRows).observe(document.getElementById('attBody'), { chi
       box.querySelector('img').onclick = function () { openSig(this.parentNode); };
     }
   });
-  if (rows.some(r => r.name)) updateCount();
+  // 예전 버전(기본 5~10행)에서 저장된 명단은 한 번만 기본 20행까지 채움
+  if (!store.get('rows20', false)) { for (let i = tb.rows.length; i < ROWS_DEFAULT; i++) addRow(); store.set('rows20', true); }
+  if (rows.some(r => r.name || r.img)) updateCount();
 })();
+store.set('rows20', true);
 
 // 미서명자 → 미참석자 칸
 function fillAbsent() {
