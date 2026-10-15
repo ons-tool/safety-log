@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>안전용품 지급대장</title>
+<script src="vendor/html2pdf.bundle.min.js"></script>
+<script src="vendor/qrcode-generator.min.js?v=5"></script>
+<script src="vendor/jsQR.js"></script>
+<link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+<header class="top">
+<nav class="tabs"><a href="index.html">🦺 안전교육일지</a><a href="security.html">🔒 보안교육일지</a><a href="supply.html" class="on">🧰 안전용품 지급대장</a></nav>
+<div class="bar">
+  <button onclick="document.getElementById('guideModal').hidden=false">❓ 이용 가이드</button>
+  <button onclick="openShare()">🔗 서명 링크 공유</button>
+  <button onclick="openScan()">📷 서명 QR 스캔</button>
+  <button onclick="savePdf()">📄 PDF 저장</button>
+  <button class="primary" onclick="sendMail()">✉️ 메일 전송</button>
+  <button onclick="resetAll()">🗑 초기화</button>
+</div>
+</header>
+
+<div id="doc" class="supply">
+  <div class="title">안전용품 지급대장</div>
+  <div class="date" style="text-align:right"><span id="dateText"></span> <input type="date" id="date"></div>
+  <div class="sub-hint">📷 서명 QR을 스캔하면 빈 칸에 차례로 입력 · ✍️ [서명하기]로 이 화면에서 직접 서명 · 품목 칸 체크 = 수령</div>
+  <table class="att sup" id="attWrap" style="margin-top:6px">
+    <colgroup id="supCols"></colgroup>
+    <thead id="supHead"></thead>
+    <tbody id="attBody"></tbody>
+    <tfoot id="supFoot"></tfoot>
+  </table>
+  <button class="add" onclick="addRow();saveRows()">➕ 행 추가</button>
+  <button class="add" onclick="delLastRow()">➖ 마지막 행 삭제</button>
+  <button class="add" onclick="addItem()">🧰 품목 추가</button>
+  <div class="sub-hint" id="liveInfo"></div>
+  <div class="ltitle" style="margin-top:14px">■ 사진 <span class="sub-hint" id="photoCnt" style="font-weight:400"></span></div>
+  <div class="photo-btns">
+    <label>📷 카메라 촬영<input type="file" accept="image/*" capture="environment" hidden onchange="addPhotos(this)"></label>
+    <label>🖼 앨범에서 선택 (여러 장)<input type="file" accept="image/*" multiple hidden onchange="addPhotos(this)"></label>
+  </div>
+  <div class="photos" id="photos"></div>
+</div>
+<div class="pop" id="shareModal" hidden>
+  <div class="mbox" style="text-align:center">
+    <div class="mtitle" id="shareTitle">🔗 휴대폰으로 QR을 찍어 서명</div>
+    <div id="qr" style="display:inline-block;margin:8px auto"></div>
+    <div id="shareUrl" style="word-break:break-all;font-size:13px;margin:8px 0"></div>
+    <div class="mbtns"><button onclick="copyLink()">링크 복사</button><button onclick="shareLink()">공유(카톡 등)</button></div>
+    <div class="mbtns"><button onclick="newSession(true)">새 서명 링크 발급</button><button class="ok" onclick="closePop('shareModal');openScan()">📷 스캔 시작</button></div>
+  </div>
+</div>
+<div class="pop" id="guideModal" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="mbox guide" style="width:min(92vw,600px)">
+    <div class="mtitle">❓ 안전용품 지급대장 이용 가이드</div>
+    <h4>1. 준비</h4>
+    <ol>
+      <li>제목 아래 달력에서 <b>날짜</b> 선택 (년·월·일 표시가 바뀝니다)</li>
+      <li>지급 명단은 기본 19행 · 하단 <b>➕ 행 추가</b> / <b>➖ 마지막 행 삭제</b>, 번호 옆 <b>✕</b>로 그 행 삭제</li>
+      <li><b>🧰 품목 추가</b>로 안전용품 품목(이름·1인당 수량)을 원하는 만큼 칸으로 추가 · 품목 이름 옆 <b>✕</b>로 품목 삭제</li>
+      <li>품목 칸의 <b>체크박스 = 수령</b> · <b>합계</b>는 품목별 (체크한 사람 수 × 1인당 수량)으로 자동 계산</li>
+      <li>성명·지급일자·비고는 직접 입력할 수도 있습니다</li>
+    </ol>
+    <h4>2. 수령 서명</h4>
+    <ol>
+      <li><b>🔗 서명 링크 공유</b> → 받는 사람이 휴대폰으로 QR 촬영 → <b>성명·지급일자·받은 품목 체크</b> → 서명 → <b>서명 QR 만들기</b></li>
+      <li><b>📷 서명 QR 스캔</b>으로 휴대폰의 서명 QR을 읽으면 성명·지급일자·품목 체크·서명이 명단에 들어갑니다</li>
+      <li>품목을 추가·삭제한 뒤에는 서명 링크 QR을 <b>다시 찍게</b> 해 주세요 (예전 링크에는 새 품목이 없습니다)</li>
+      <li>카메라가 안 켜지면 <b>📸 카메라 앱으로 찍어서 읽기</b> 또는 <b>🖼 QR 사진 파일로 읽기</b></li>
+      <li>휴대폰이 없는 사람은 명단의 <b>✍️ 서명하기</b>로 이 화면에서 바로 서명</li>
+    </ol>
+    <h4>3. 사진 · 마무리</h4>
+    <ol>
+      <li><b>📷 카메라 촬영</b>(한 장씩 계속 추가) 또는 <b>🖼 앨범에서 선택</b>(여러 장 한 번에)으로 지급 사진 첨부 · 사진의 <b>×</b>로 삭제</li>
+      <li><b>📄 PDF 저장</b> 또는 <b>✉️ 메일 전송</b> · 공용 PC라면 <b>🗑 초기화</b></li>
+    </ol>
+    <h4>⚠️ 알아두세요</h4>
+    <ul>
+      <li>입력 내용은 <b>이 기기의 브라우저에만</b> 저장되며 어떤 서버로도 전송되지 않습니다.</li>
+      <li><b>사진은 새로고침하면 사라지니</b> PDF 저장 직전에 넣어 주세요.</li>
+      <li>휴대폰 카메라가 안 켜지면: 카톡·네이버 앱 안이 아닌 <b>크롬·삼성인터넷·Safari</b>로 열고 카메라 권한을 허용하세요.</li>
+    </ul>
+    <div class="mbtns"><button class="ok" onclick="closePop('guideModal')">닫기</button></div>
+  </div>
+</div>
+<div class="pop" id="scanModal" hidden>
+  <div class="mbox" style="text-align:center">
+    <div class="mtitle">📷 참석자 휴대폰의 서명 QR을 카메라에 비춰 주세요</div>
+    <video id="cam" playsinline muted style="width:100%;max-height:50vh;background:#000;border-radius:6px"></video>
+    <select id="camSel" hidden onchange="startCam(this.value)" style="width:100%;padding:6px;margin-top:6px"></select>
+    <div id="scanMsg" style="margin:8px 0;font-size:14px;min-height:20px"></div>
+    <label class="add" style="display:block;border:1px dashed #888;border-radius:6px;cursor:pointer">📸 카메라 앱으로 찍어서 읽기 (카메라 권한이 안 될 때)<input type="file" accept="image/*" capture="environment" hidden onchange="scanFile(this)"></label>
+    <label class="add" style="display:block;border:1px dashed #888;border-radius:6px;cursor:pointer">🖼 QR 사진 파일로 읽기 (캡처·앨범 사진)<input type="file" accept="image/*" multiple hidden onchange="scanFile(this)"></label>
+    <div class="mbtns"><button class="ok" onclick="closeScan()">닫기</button></div>
+  </div>
+</div>
+<div id="modal" hidden>
+  <div class="mbox">
+    <div class="mtitle">서명해 주세요</div>
+    <canvas id="pad"></canvas>
+    <div class="mbtns"><button onclick="clearPad()">지우기</button><button onclick="closeSig()">취소</button><button class="ok" onclick="doneSig()">완료</button></div>
+  </div>
+</div>
+
+<script>
+// ── 안전용품 지급대장: 품목(열) 추가/삭제 ──
+// 품목은 이 브라우저에 저장 [{id, name, qty}] · 각 품목 칸은 '수령' 체크박스
+// 서명 QR(sign.html?f=sup)은 소속 칸 대신 지급일자, 사번 칸 대신 품목 수령 여부("id:1,id:0")를 담아 옴
+const SUP_KEY = 'sup_items';
+const escH = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let supItems;
+try { supItems = JSON.parse(localStorage.getItem(SUP_KEY)); } catch (e) {}
+if (!Array.isArray(supItems)) supItems = [{ id:'a1', name:'안전모내피', qty:2 }, { id:'a2', name:'벌레 퇴치제', qty:2 }];
+function saveItems(){ try { localStorage.setItem(SUP_KEY, JSON.stringify(supItems)); } catch (e) {} }
+
+// 머리글·열 너비·합계 줄을 품목 구성에 맞게 다시 그림
+function renderSupHead(){
+  const n = supItems.length, w = n ? (40 / n).toFixed(2) : 0;
+  document.getElementById('supCols').innerHTML = '<col style="width:7%"><col style="width:13%"><col style="width:11%">'
+    + supItems.map(() => `<col style="width:${w}%">`).join('') + `<col style="width:${n ? 17 : 37}%"><col style="width:${n ? 12 : 32}%">`;
+  document.getElementById('supHead').innerHTML = '<tr><th>순번</th><th>성 명</th><th>지급일자</th>'
+    + supItems.map(it => `<th class="ith">${escH(it.name)}<small>(${it.qty}EA)</small><button class="idel" title="품목 삭제" onclick="delItem('${it.id}')">✕</button></th>`).join('')
+    + '<th>서 명</th><th>비 고</th></tr>';
+  document.getElementById('supFoot').innerHTML = '<tr class="sum"><td colspan="3">합 계</td>'
+    + supItems.map(it => `<td id="sum_it_${it.id}">0 개</td>`).join('') + '<td colspan="2"></td></tr>';
+}
+// 품목 구성을 바꿀 때: 지금 명단(입력값·체크·서명)을 그대로 옮겨 다시 그림
+function rebuildSup(){
+  const data = attRows().map(tr => {
+    const img = tr.querySelector('.sigbox img'), r = { img: img ? img.src : '' };
+    tr.querySelectorAll('[class*="f-"]').forEach(el => { const c = [...el.classList].find(x => x.startsWith('f-')).slice(2); r[c] = fieldVal(tr, c); });
+    return r;
+  });
+  saveItems(); renderSupHead(); restoreRows(data); saveRows();
+}
+function addItem(){
+  const name = (prompt('추가할 안전용품 품목 이름을 입력하세요 (예: 안전장갑)') || '').replace(/[|~]/g, '').trim();
+  if (!name) return;
+  if (supItems.some(it => it.name === name)) return alert('이미 있는 품목입니다.');
+  const q = prompt(`${name} 1인당 지급 수량(EA)을 입력하세요`, '2');
+  if (q === null) return;
+  const qty = Math.max(0, parseInt(q, 10) || 0);
+  supItems.push({ id: Math.random().toString(36).slice(2, 7), name, qty });
+  rebuildSup();
+  alert(`'${name}' 품목을 추가했습니다.\n이미 공유한 서명 링크에는 새 품목이 없으니, 휴대폰으로 받으려면 [🔗 서명 링크 공유]의 QR을 다시 찍게 해 주세요.`);
+}
+function delItem(id){
+  const it = supItems.find(x => x.id === id); if (!it) return;
+  if (!confirm(`'${it.name}' 품목 칸을 삭제할까요?\n(이 품목의 수령 체크도 함께 지워집니다)`)) return;
+  supItems = supItems.filter(x => x.id !== id);
+  rebuildSup();
+}
+// 합계: 품목별 (수령 체크 수 × 1인당 수량)
+function supTotals(){
+  supItems.forEach(it => {
+    const n = attRows().filter(tr => fieldVal(tr, 'it_' + it.id)).length;
+    const el = document.getElementById('sum_it_' + it.id), t = `${n * it.qty} 개`;
+    if (el && el.textContent !== t) el.textContent = t; // 값이 바뀔 때만 (명단 변경 감시가 다시 돌지 않도록)
+  });
+  const pc = document.getElementById('photoCnt'), pt = photos.length ? `(${photos.length}장)` : ''; if (pc && pc.textContent !== pt) pc.textContent = pt;
+}
+// 서명 QR이 들어올 때: 지급일자·품목 수령 체크 반영
+function supOnSigned(tr, s){
+  if (s && s.dept) setField(tr, 'date', s.dept);
+  else if (!fieldVal(tr, 'date')) { const d = document.getElementById('date').value.split('-'); if (d.length === 3) setField(tr, 'date', `${+d[1]}/${+d[2]}`); }
+  if (s && s.emp) s.emp.split(',').forEach(p => { const [id, v] = p.split(':'); setField(tr, 'it_' + id, v === '1'); });
+  else supItems.forEach(it => setField(tr, 'it_' + it.id, true));
+}
+// 서명 링크에 품목 목록과 선택한 날짜를 붙여 휴대폰 화면에서 체크할 수 있게 함 (개인정보 없음)
+function supSignExtra(){
+  return '&it=' + encodeURIComponent(supItems.map(it => [it.id, it.name, it.qty].join('~')).join('|'))
+    + '&d=' + encodeURIComponent(document.getElementById('date').value);
+}
+renderSupHead();
+window.FORM = { key:"sup_", name:"안전용품지급대장", ids:["date"], rows:19,
+  get rowCells(){ return ["name","date", ...supItems.map(it => "it_" + it.id), "sig", "note"]; },
+  split:false, signParam:"sup", onSigned: supOnSigned, updateTotals: supTotals, signExtra: supSignExtra };
+</script>
+<script src="form.js?v=5"></script>
+<script src="sig.js?v=5"></script>
+<script src="collect.js?v=5"></script>
+</body>
+</html>

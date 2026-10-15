@@ -40,6 +40,7 @@ function addPhotos(input){
 function renderPhotos(){
   document.getElementById('photos').innerHTML = photos.map((p,i)=>
     `<figure><img src="${p}"><button class="del" onclick="photos.splice(${i},1);renderPhotos()">×</button></figure>`).join('');
+  updateTotals();
 }
 
 // 서명: [서명하기] 버튼 → 팝업에서 서명 → 칸에 이미지로 삽입
@@ -77,16 +78,20 @@ function setSigImg(box, src){
 function apprCell(role){ return `<div class="sigbox appr-btns"><button class="sbtn" onclick="openSig(this.parentNode)">✍️ 서명</button><button class="sbtn" onclick="openShare('${role}')">📱 QR</button></div>`; }
 
 // ── 참석자 명단 ──
-const ROWS_DEFAULT=20;
+const ROWS_DEFAULT=FORM.rows||20;
 // 행 목록 (화면 순서 = 번호 순서). 2단이면 왼쪽 표 → 오른쪽 표 순서
 function attRows(){ return [...document.querySelectorAll('#attWrap tr.att-row')]; }
 function fieldEl(tr,f){ return tr.querySelector('.f-'+f); }
-function fieldVal(tr,f){ const el=fieldEl(tr,f); return el ? el.value.trim() : ''; }
-function setField(tr,f,v){ const el=fieldEl(tr,f); if(el) el.value=v; }
+// 체크박스 칸은 체크되면 '1', 아니면 ''
+function fieldVal(tr,f){ const el=fieldEl(tr,f); if(!el) return ''; return el.type==='checkbox' ? (el.checked?'1':'') : el.value.trim(); }
+function setField(tr,f,v){ const el=fieldEl(tr,f); if(!el) return; if(el.type==='checkbox') el.checked = v==='1'||v===true; else el.value=v; }
+// 칸 이름이 'it_'로 시작하면 품목 수령 체크박스 칸
+const cellHtml=c=>c==='sig' ? `<td class="sigcell">${sigCell()}</td>`
+  : c.startsWith('it_') ? `<td><input type="checkbox" class="f-${c} chk" title="수령"></td>` : `<td><input class="f-${c}"></td>`;
 function addRow(dept='',name='',emp=''){
   const tr=document.createElement('tr'); tr.className='att-row';
   tr.innerHTML=`<td><span class="rn"></span><button class="rdel" title="이 행 삭제" onclick="delRow(this.closest('tr'))">✕</button></td>`
-    + FORM.rowCells.map(c=>c==='sig' ? `<td class="sigcell">${sigCell()}</td>` : `<td><input class="f-${c}"></td>`).join('');
+    + FORM.rowCells.map(cellHtml).join('');
   setField(tr,'dept',dept); setField(tr,'emp',emp); setField(tr,'name',name);
   document.getElementById(FORM.split ? 'attR' : 'attBody').appendChild(tr);
   layoutRows();
@@ -100,14 +105,23 @@ function layoutRows(){
     rows.forEach((tr,i)=>{ const to=i<half?L:R; if(tr.parentNode!==to || to.lastElementChild!==tr) to.appendChild(tr); });
   }
   rows.forEach((tr,i)=>tr.querySelector('.rn').textContent=i+1);
+  updateTotals();
 }
 function clearRows(){ attRows().forEach(tr=>tr.remove()); }
+// 합계 줄: FORM.totals에 적힌 칸(예: 수량)의 숫자를 더해 #sum_칸이름 에 표시
+function updateTotals(){
+  if(typeof FORM.updateTotals==='function') return FORM.updateTotals();
+  (FORM.totals||[]).forEach(f=>{
+    const sum=attRows().reduce((a,tr)=>a+(parseFloat(fieldVal(tr,f).replace(/[^\d.-]/g,''))||0),0);
+    const el=document.getElementById('sum_'+f), t=`${sum} 개`; if(el && el.textContent!==t) el.textContent=t;
+  });
+}
 function delRow(tr){
   const name=fieldVal(tr,'name'), signed=!!tr.querySelector('.sigbox img');
   if((name||signed||fieldVal(tr,'dept')||fieldVal(tr,'emp'))
      && !confirm(`${tr.querySelector('.rn').textContent}번 ${name?name+'님 ':''}행을 삭제할까요?${signed?'\n(받은 서명도 함께 지워집니다)':''}`)) return;
   tr.remove(); layoutRows();
-  if(typeof updateCount==='function') updateCount();
+  if(typeof updateCount==='function') updateCount(); else updateTotals();
   if(typeof saveRows==='function') saveRows();
 }
 function delLastRow(){
@@ -126,8 +140,8 @@ const dt=document.getElementById('date'); if(!dt.value) dt.valueAsDate=new Date(
 dt.addEventListener('change',()=>{ showDate(); save(); });
 
 function fileName(){
-  const v=i=>document.getElementById(i).value.trim();
-  return `${FORM.name}_${v('date').replaceAll('-','')}_${v('team')||'팀'}.pdf`;
+  const v=i=>{ const el=document.getElementById(i); return el ? el.value.trim() : ''; };
+  return `${FORM.name}_${v('date').replaceAll('-','')}${document.getElementById('team') ? '_'+(v('team')||'팀') : ''}.pdf`;
 }
 
 // PDF: 화면 크기와 무관하게 A4 폭(194mm≈733px)의 복제본을 만들어 변환
@@ -140,7 +154,8 @@ async function makePdf(){
   const src=doc.querySelectorAll('input,textarea'), dst=clone.querySelectorAll('input,textarea');
   dst.forEach((el,i)=>{
     const o=src[i];
-    if(['file','date','checkbox'].includes(o.type)) return el.remove();
+    if(['file','date'].includes(o.type)) return el.remove();
+    if(o.type==='checkbox'){ const t=document.createElement('span'); t.className='pdf-val'; t.textContent=o.checked?'✔':''; return el.replaceWith(t); }
     const t=document.createElement(o.tagName==='TEXTAREA'?'div':'span');
     t.className=o.tagName==='TEXTAREA'?'pdf-text':'pdf-val'; t.textContent=o.value;
     if(el.style.width) t.style.display='inline-block', t.style.minWidth=el.style.width;
@@ -166,7 +181,8 @@ async function savePdf(){
 async function sendMail(){
   const blob=await makePdf();
   const file=new File([blob],fileName(),{type:'application/pdf'});
-  const subject=`[${FORM.name}] ${document.getElementById('topic').value}`;
+  const topic=document.getElementById('topic');
+  const subject=`[${FORM.name}] ${topic ? topic.value : document.getElementById('dateText').textContent}`;
   // 휴대폰: 공유창 → 메일앱에 PDF 첨부
   if(navigator.canShare && navigator.canShare({files:[file]})){
     try{ await navigator.share({files:[file], title:subject, text:subject}); return; }catch(e){ if(e.name==='AbortError') return; }

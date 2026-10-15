@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>교육 참석 서명</title>
-<script src="vendor/qrcode-generator.min.js?v=4"></script>
-<script src="sig.js?v=4"></script>
+<script src="vendor/qrcode-generator.min.js?v=5"></script>
+<script src="sig.js?v=5"></script>
 <style>
   body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
   .box { max-width:480px; margin:0 auto; padding:16px; }
@@ -19,6 +19,8 @@
   .msg { text-align:center; padding:24px 0; font-size:17px; line-height:1.6; }
   #qr { display:inline-block; background:#fff; padding:12px; border-radius:8px; }
   .note { font-size:13px; color:#555; margin-top:10px; }
+  .chkrow { display:flex; align-items:center; gap:10px; font-weight:400; margin:6px 0; padding:12px; background:#fff; border:1px solid #bbb; border-radius:8px; font-size:16px; }
+  .chkrow input { width:22px; height:22px; padding:0; margin:0; accent-color:#2563eb; }
 </style>
 </head>
 <body>
@@ -34,6 +36,12 @@
   </div>
   <label>사번</label>
   <input id="emp" placeholder="사번 입력" inputmode="numeric" autocomplete="off">
+  </div>
+  <div id="supBox" hidden>
+  <label>지급일자</label>
+  <input id="supDate" type="date">
+  <label>받은 안전용품 (받은 품목에 체크)</label>
+  <div id="supItems"></div>
   </div>
   <label>서명</label>
   <canvas id="pad"></canvas>
@@ -56,6 +64,29 @@ if (isSec) {
   document.getElementById('title').textContent = '✍️ 정보보안 교육 참석 서명';
   document.title = '정보보안 교육 참석 서명';
   document.getElementById('deptBox').hidden = true;
+}
+// f=sup: 안전용품 지급대장 → 성명·지급일자·품목 수령 체크·서명
+// 링크의 it=id~품목명~수량|... 로 품목 목록을, d=YYYY-MM-DD 로 기본 지급일자를 받음
+const isSup = qs.get('f') === 'sup';
+let supList = [];
+if (isSup) {
+  document.getElementById('title').textContent = '✍️ 안전용품 수령 서명';
+  document.title = '안전용품 수령 서명';
+  document.getElementById('extra').hidden = true;
+  document.getElementById('supBox').hidden = false;
+  supList = (qs.get('it') || '').split('|').filter(Boolean).map(s => { const [id, name, qty] = s.split('~'); return { id, name, qty }; })
+    .filter(it => /^[a-z0-9]{1,8}$/.test(it.id || '') && it.name);
+  const d = qs.get('d');
+  document.getElementById('supDate').value = /^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const box = document.getElementById('supItems');
+  if (!supList.length) box.innerHTML = '<div class="note">품목 정보가 없습니다. 교육자 화면의 QR을 다시 찍어 주세요.</div>';
+  supList.forEach(it => {
+    const lab = document.createElement('label'); lab.className = 'chkrow';
+    lab.innerHTML = '<input type="checkbox" checked> <span></span>';
+    lab.querySelector('input').dataset.id = it.id;
+    lab.querySelector('span').textContent = `${it.name}${it.qty ? ` (${it.qty}EA)` : ''}`;
+    box.appendChild(lab);
+  });
 }
 if (role) {
   document.getElementById('title').textContent = `✍️ ${isSec ? '보안교육일지 ' : ''}결재 서명 (${role})`;
@@ -82,9 +113,17 @@ function submit(){
   if(!name) return alert('이름을 입력해 주세요.');
   if(!strokes.some(s => s.length > 1)) return alert('서명을 입력해 주세요.');
   const r = pad.getBoundingClientRect();
-  const text = role
-    ? packSig(sid, name, '', '', encodeStrokes(strokes, r.width, r.height), role)
-    : packSig(sid, name, $('dept').value.trim(), $('emp').value.trim(), encodeStrokes(strokes, r.width, r.height));
+  let text;
+  if (role) text = packSig(sid, name, '', '', encodeStrokes(strokes, r.width, r.height), role);
+  else if (isSup) {
+    // 소속 자리에 지급일자(월/일), 사번 자리에 품목 수령 여부(id:1/0)를 담음
+    const d = $('supDate').value.split('-');
+    const date = d.length === 3 ? `${+d[1]}/${+d[2]}` : '';
+    const checks = [...document.querySelectorAll('#supItems input')].map(c => `${c.dataset.id}:${c.checked ? 1 : 0}`).join(',');
+    if (supList.length && !/:1/.test(checks) && !confirm('받은 품목이 하나도 체크되지 않았습니다. 그대로 진행할까요?')) return;
+    text = packSig(sid, name, date, checks, encodeStrokes(strokes, r.width, r.height));
+  }
+  else text = packSig(sid, name, $('dept').value.trim(), $('emp').value.trim(), encodeStrokes(strokes, r.width, r.height));
   $('qr').innerHTML = '';
   if (typeof drawQR !== 'function' || typeof qrcode !== 'function')
     return alert('화면 파일이 예전 버전으로 남아 있습니다. 페이지를 새로고침한 뒤 다시 서명해 주세요.');

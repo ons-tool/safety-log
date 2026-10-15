@@ -24,7 +24,8 @@ function newSession(ask) {
 }
 function signUrl(role) {
   return new URL(`sign.html?s=${sessionId}` + (FORM.signParam ? `&f=${FORM.signParam}` : '')
-    + (role ? `&r=${encodeURIComponent(role)}` : ''), location.href).href;
+    + (role ? `&r=${encodeURIComponent(role)}` : '')
+    + (typeof FORM.signExtra === 'function' ? FORM.signExtra() : ''), location.href).href;
 }
 function openShare(role) {
   shareRole = role === '담당' || role === '팀장' ? role : '';
@@ -166,47 +167,60 @@ function applySig(text) {
   if (tr && tr.querySelector('.sigbox img') && !confirm(`${s.name}님은 이미 서명했습니다. 새 서명으로 바꿀까요?`)) return `${s.name}님: 기존 서명 유지`;
   if (!tr) tr = rows.find(t => !fieldVal(t, 'name') && !t.querySelector('.sigbox img')) || addRow();
   setField(tr, 'name', s.name); if (s.dept) setField(tr, 'dept', s.dept); if (s.emp) setField(tr, 'emp', s.emp);
+  if (typeof FORM.onSigned === 'function') FORM.onSigned(tr, s); // 양식별 추가 입력 (예: 지급일자·품목 수령)
   setSigImg(tr.querySelector('.sigbox'), png);
-  return `✅ ${s.name}님 서명 반영 (${document.getElementById('att').value}명 완료)`;
+  return `✅ ${s.name}님 서명 반영 (${attRows().filter(t => t.querySelector('.sigbox img')).length}명 완료)`;
 }
 function updateCount() {
   const rows = attRows();
   const named = rows.filter(tr => fieldVal(tr, 'name')).length;
   const signed = rows.filter(tr => tr.querySelector('.sigbox img')).length;
-  document.getElementById('att').value = signed; save();
+  const att = document.getElementById('att'); if (att) att.value = signed;
+  save();
   document.getElementById('liveInfo').textContent = `📷 스캔 수합 · 서명 ${signed} / ${named}명`;
+  if (typeof updateTotals === 'function') updateTotals();
 }
 
 // ── 명단·서명을 이 기기에 저장/복원 (새로고침 대비, 양식별로 따로 저장) ──
+// 행의 모든 입력칸(f-이름)을 저장. 예전 형식(dept/emp/name)과도 호환
 function saveRows() {
   store.set(K('attRows'), attRows().map(tr => {
-    const img = tr.querySelector('.sigbox img');
-    return { dept: fieldVal(tr, 'dept'), emp: fieldVal(tr, 'emp'), name: fieldVal(tr, 'name'), img: img ? img.src : '' };
+    const img = tr.querySelector('.sigbox img'), r = { img: img ? img.src : '' };
+    FORM.rowCells.filter(c => c !== 'sig').forEach(c => r[c] = fieldVal(tr, c));
+    return r;
   }));
+  if (typeof updateTotals === 'function') updateTotals();
 }
 document.getElementById('attWrap').addEventListener('input', saveRows);
+document.getElementById('attWrap').addEventListener('change', saveRows);
 new MutationObserver(saveRows).observe(document.getElementById('attWrap'), { childList: true, subtree: true });
-(() => {
-  const rows = store.get(K('attRows'), null);
-  if (!Array.isArray(rows)) return;
+// 저장된 명단으로 행을 다시 만듦 (새로고침 때, 품목 칸 구성이 바뀔 때)
+function restoreRows(rows) {
   clearRows();
   rows.forEach(r => {
     const tr = addRow(r.dept, r.name, r.emp);
+    FORM.rowCells.filter(c => c !== 'sig' && r[c] != null).forEach(c => setField(tr, c, r[c]));
     if (r.img) {
       const box = tr.querySelector('.sigbox');
       box.innerHTML = `<img src="${r.img}" title="눌러서 다시 서명">`;
       box.querySelector('img').onclick = function () { openSig(this.parentNode); };
     }
   });
-  // 예전 버전(기본 5~10행)에서 저장된 명단은 한 번만 기본 20행까지 채움
+  updateCount();
+}
+(() => {
+  const rows = store.get(K('attRows'), null);
+  if (!Array.isArray(rows)) return;
+  restoreRows(rows);
+  // 예전 버전(기본 5~10행)에서 저장된 명단은 한 번만 기본 행 수까지 채움
   if (!store.get(K('rows20'), false)) { for (let i = attRows().length; i < ROWS_DEFAULT; i++) addRow(); store.set(K('rows20'), true); }
-  if (rows.some(r => r.name || r.img)) updateCount();
 })();
 store.set(K('rows20'), true);
 
 // 미서명자 → 미참석자 칸
 function fillAbsent() {
   const names = attRows().filter(tr => fieldVal(tr, 'name') && !tr.querySelector('.sigbox img')).map(tr => fieldVal(tr, 'name'));
+  if (!document.getElementById('absCnt')) return;
   document.getElementById('absCnt').value = names.length;
   document.getElementById('absNames').value = names.join(FORM.absJoin || '\n');
   save();

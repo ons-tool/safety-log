@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>안전교육일지</title>
 <script src="vendor/html2pdf.bundle.min.js"></script>
-<script src="vendor/qrcode-generator.min.js?v=4"></script>
+<script src="vendor/qrcode-generator.min.js?v=5"></script>
 <script src="vendor/jsQR.js"></script>
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header class="top">
-<nav class="tabs"><a href="index.html" class="on">🦺 안전교육일지</a><a href="security.html">🔒 보안교육일지</a></nav>
+<nav class="tabs"><a href="index.html" class="on">🦺 안전교육일지</a><a href="security.html">🔒 보안교육일지</a><a href="supply.html">🧰 안전용품 지급대장</a></nav>
 <div class="bar">
   <button onclick="document.getElementById('guideModal').hidden=false">❓ 이용 가이드</button>
   <button onclick="openShare()">🔗 서명 링크 공유</button>
@@ -145,8 +145,8 @@
 window.FORM = { key:"", name:"안전교육일지", ids:["date","hq","team","teacher","place","cnt","att","note","topic","content","absCnt","absNames"],
   rowCells:["dept","emp","name","sig"], split:false, absJoin:"\n", signParam:"" };
 </script>
-<script src="form.js?v=4"></script>
-<script src="sig.js?v=4"></script>
-<script src="collect.js?v=4"></script>
+<script src="form.js?v=5"></script>
+<script src="sig.js?v=5"></script>
+<script src="collect.js?v=5"></script>
 </body>
 </html>
