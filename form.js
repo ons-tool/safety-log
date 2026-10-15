@@ -139,9 +139,18 @@ function showDate(){ const v=document.getElementById('date').value.split('-');
 const dt=document.getElementById('date'); if(!dt.value) dt.valueAsDate=new Date(); showDate();
 dt.addEventListener('change',()=>{ showDate(); save(); });
 
+// PDF 파일 이름: 양식별 규칙(FORM.fileName)이 있으면 그것을 사용
+//   안전교육일지 → 00월_안전교육(교육주제)_팀명 / 보안교육일지 → 00월_보안교육(교육주제)_팀명
+//   안전용품 지급대장 → 안전용품지급대장(품목1,품목2…)_팀명
+// 비어 있는 값은 빼고, 파일 이름에 쓸 수 없는 문자(\ / : * ? " < > |)는 지움
+function fileVal(i){ const el=document.getElementById(i); return el ? el.value.trim() : ''; }
+function fileMonth(){ const m=fileVal('date').split('-')[1]; return m ? `${m}월` : ''; }
+const cleanName = s => String(s||'').replace(/[\\/:*?"<>|\r\n]+/g,' ').replace(/\s+/g,' ').trim();
+function joinName(head, inner, team){ inner=cleanName(inner); team=cleanName(team); return `${head}${inner ? `(${inner})` : ''}${team ? '_'+team : ''}`; }
 function fileName(){
-  const v=i=>{ const el=document.getElementById(i); return el ? el.value.trim() : ''; };
-  return `${FORM.name}_${v('date').replaceAll('-','')}${document.getElementById('team') ? '_'+(v('team')||'팀') : ''}.pdf`;
+  const name = typeof FORM.fileName==='function' ? FORM.fileName()
+    : `${FORM.name}_${fileVal('date').replaceAll('-','')}${document.getElementById('team') ? '_'+(fileVal('team')||'팀') : ''}`;
+  return (cleanName(name) || FORM.name) + '.pdf';
 }
 
 // PDF: 화면 크기와 무관하게 A4 폭(194mm≈733px)의 복제본을 만들어 변환

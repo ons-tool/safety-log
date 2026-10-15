@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>안전용품 지급대장</title>
 <script src="vendor/html2pdf.bundle.min.js"></script>
-<script src="vendor/qrcode-generator.min.js?v=5"></script>
+<script src="vendor/qrcode-generator.min.js?v=6"></script>
 <script src="vendor/jsQR.js"></script>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <header class="top">
@@ -24,7 +24,7 @@
 
 <div id="doc" class="supply">
   <div class="title">안전용품 지급대장</div>
-  <div class="date" style="text-align:right"><span id="dateText"></span> <input type="date" id="date"></div>
+  <div class="sup-meta"><span class="team-box">팀 명 : <input id="team" placeholder="팀명 입력"></span><span class="date"><span id="dateText"></span> <input type="date" id="date"></span></div>
   <div class="sub-hint">📷 서명 QR을 스캔하면 빈 칸에 차례로 입력 · ✍️ [서명하기]로 이 화면에서 직접 서명 · 품목 칸 체크 = 수령</div>
   <table class="att sup" id="attWrap" style="margin-top:6px">
     <colgroup id="supCols"></colgroup>
@@ -174,12 +174,13 @@ function supSignExtra(){
     + '&d=' + encodeURIComponent(document.getElementById('date').value);
 }
 renderSupHead();
-window.FORM = { key:"sup_", name:"안전용품지급대장", ids:["date"], rows:19,
+window.FORM = { key:"sup_", name:"안전용품지급대장", ids:["date","team"],
+  fileName: () => joinName("안전용품지급대장", supItems.map(it => it.name).join(","), fileVal("team")), rows:19,
   get rowCells(){ return ["name","date", ...supItems.map(it => "it_" + it.id), "sig", "note"]; },
   split:false, signParam:"sup", onSigned: supOnSigned, updateTotals: supTotals, signExtra: supSignExtra };
 </script>
-<script src="form.js?v=5"></script>
-<script src="sig.js?v=5"></script>
-<script src="collect.js?v=5"></script>
+<script src="form.js?v=6"></script>
+<script src="sig.js?v=6"></script>
+<script src="collect.js?v=6"></script>
 </body>
 </html>
