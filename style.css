@@ -1,0 +1,82 @@
+body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
+.bar { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:10px; background:#1f2937; }
+.bar button { padding:10px 16px; border:0; border-radius:6px; font-size:15px; cursor:pointer; background:#fff; }
+.bar button.primary { background:#2563eb; color:#fff; }
+#doc { width:794px; max-width:100%; margin:16px auto; background:#fff; padding:28px; box-sizing:border-box; }
+table { width:100%; border-collapse:collapse; table-layout:fixed; }
+td, th { border:1px solid #333; padding:4px 6px; font-size:13px; vertical-align:middle; }
+th { background:#e5e7eb; font-weight:600; letter-spacing:4px; }
+input, textarea { width:100%; box-sizing:border-box; border:0; font:inherit; background:transparent; padding:2px; }
+input:focus, textarea:focus { outline:2px solid #93c5fd; background:#f8fbff; }
+textarea { resize:vertical; min-height:60px; line-height:1.5; }
+.title { font-size:32px; font-weight:800; text-align:center; letter-spacing:8px; }
+.date { text-align:center; margin-top:8px; }
+.date #dateText { font-size:16px; font-weight:600; }
+.date input { width:auto; border:1px solid #999; border-radius:4px; padding:4px; }
+.pdf-mode .date input, .pdf-mode .sbtn { display:none !important; }
+.appr td { height:22px; text-align:center; }
+.appr .sign { height:60px; padding:0; }
+.clr { font-size:11px; padding:2px 6px; margin-top:2px; }
+.page2 { margin-top:30px; }
+.att td { height:44px; text-align:center; padding:0 4px; }
+.add { margin-top:8px; padding:8px 14px; }
+.pdf-mode .clr, .pdf-mode .add, .pdf-mode .sub-hint, .pdf-mode .rdel { display:none !important; }
+.att td:first-child { white-space:nowrap; padding:0 2px; }
+.rdel { margin-left:3px; padding:0 4px; border:1px solid #dc2626; color:#dc2626; background:#fff; border-radius:3px; font-size:11px; line-height:16px; cursor:pointer; }
+.appr-btns { flex-direction:column; gap:3px; } .appr-btns .sbtn { padding:2px 6px; font-size:11px; white-space:nowrap; }
+@media (max-width:600px){ .appr-btns .sbtn { padding:1px 3px; font-size:10px; } .rdel { padding:0 2px; margin-left:1px; } }
+.sigbox { height:100%; display:flex; align-items:center; justify-content:center; }
+.appr .sigbox { height:60px; } .att .sigbox { height:44px; }
+.sigbox img { max-height:100%; max-width:100%; cursor:pointer; }
+.sbtn { padding:4px 8px; border:1px solid #2563eb; color:#2563eb; background:#fff; border-radius:4px; font-size:12px; }
+.lists { display:flex; gap:12px; margin-top:8px; align-items:flex-start; }
+.col-att { flex:2.3; } .col-abs { flex:1; }
+.ltitle { font-weight:700; margin-bottom:4px; }
+#modal { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:20; display:flex; align-items:center; justify-content:center; }
+#modal[hidden], .pop[hidden] { display:none; }
+.pop { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:20; display:flex; align-items:center; justify-content:center; }
+.memtbl td { padding:2px; text-align:center; } .memtbl input[type=text] { border-bottom:1px solid #ccc; }
+.pop .mbox { max-height:90vh; overflow:auto; }
+.pdf-mode #liveInfo { display:none !important; }
+.mbox { background:#fff; border-radius:10px; padding:16px; width:min(92vw,520px); }
+.mtitle { font-weight:700; margin-bottom:8px; }
+.guide { font-size:14px; line-height:1.6; } .guide h4 { margin:14px 0 4px; color:#1d4ed8; } .guide ol, .guide ul { margin:0; padding-left:20px; }
+#pad { width:100%; height:220px; border:2px dashed #999; border-radius:6px; touch-action:none; display:block; background:#fffef5; }
+.mbtns { display:flex; gap:8px; margin-top:10px; } .mbtns button { flex:1; padding:12px; border:0; border-radius:6px; font-size:15px; background:#e5e7eb; }
+.mbtns .ok { background:#2563eb; color:#fff; }
+@media (max-width:600px){ .lists{flex-direction:column;} .col-abs{width:100%;} }
+.sub-hint { font-size:12px; color:#666; text-align:right; }
+.vert { writing-mode:vertical-rl; text-align:center; letter-spacing:10px; background:#e5e7eb; font-weight:600; }
+.photos { display:grid; grid-template-columns:1fr 1fr; gap:6px; min-height:120px; }
+.photos figure { margin:0; position:relative; }
+.photos img { width:100%; height:200px; object-fit:cover; display:block; }
+.photos .del { position:absolute; top:4px; right:4px; background:#dc2626; color:#fff; border:0; border-radius:50%; width:24px; height:24px; }
+.photo-btns { display:flex; gap:6px; margin-bottom:6px; }
+.photo-btns label { flex:1; text-align:center; padding:8px; background:#f3f4f6; border:1px dashed #888; border-radius:6px; cursor:pointer; }
+.pdf-mode .photo-btns, .pdf-mode .del { display:none !important; }
+.pdf-mode textarea { resize:none; overflow:hidden; }
+/* PDF 전용 고정 레이아웃 (휴대폰 화면 규칙 무시) */
+.pdf-sheet { width:733px !important; max-width:none !important; margin:0 !important; padding:2px 3px 12px !important; box-sizing:border-box !important; background:#fff; }
+.pdf-sheet .page2 { padding-bottom:4px; }
+.pdf-sheet td, .pdf-sheet th { font-size:12px !important; }
+.pdf-sheet .title { font-size:30px !important; } .pdf-sheet .page2 .title { font-size:22px !important; }
+.pdf-sheet .photos { grid-template-columns:1fr 1fr !important; } .pdf-sheet .photos img { height:180px; }
+.pdf-sheet .lists { flex-direction:row !important; }
+.pdf-sheet .pdf-text { white-space:pre-wrap; word-break:break-all; line-height:1.5; min-height:40px; padding:2px; }
+.pdf-sheet .pdf-val { white-space:pre-wrap; word-break:break-all; }
+.pdf-sheet .page2 { margin-top:0; }
+@media (max-width:600px){ #doc{padding:10px;} td,th{font-size:11px;} .title{font-size:22px;} .photos{grid-template-columns:1fr;} }
+
+/* 상단 양식 전환 배너(탭) + 버튼 줄: 함께 위에 고정 */
+.top { position:sticky; top:0; z-index:9; }
+.tabs { display:flex; background:#111827; }
+.tabs a { flex:1; text-align:center; padding:12px 8px; font-size:16px; font-weight:700; color:#9ca3af; text-decoration:none; border-bottom:3px solid transparent; }
+.tabs a.on { color:#fff; background:#1f2937; border-bottom-color:#60a5fa; }
+.tabs a:not(.on):hover { color:#e5e7eb; }
+/* 보안교육일지: 참석자 명단 좌우 2단 */
+.att2 { display:flex; gap:10px; align-items:flex-start; margin-top:8px; }
+.att2 > table { flex:1; }
+.date2 { text-align:right; margin:4px 0 6px; font-weight:600; }
+.pdf-sheet .att2 { flex-direction:row !important; }
+@media (max-width:600px){ .att2 { flex-direction:column; gap:0; } .att2 > table + table thead { display:none; } }
+@media (max-width:600px){ .page2 > .title { font-size:19px !important; letter-spacing:2px; } }

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>보안교육일지</title>
+<script src="vendor/html2pdf.bundle.min.js"></script>
+<script src="vendor/qrcode-generator.min.js?v=4"></script>
+<script src="vendor/jsQR.js"></script>
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+<header class="top">
+<nav class="tabs"><a href="index.html">🦺 안전교육일지</a><a href="security.html" class="on">🔒 보안교육일지</a></nav>
+<div class="bar">
+  <button onclick="document.getElementById('guideModal').hidden=false">❓ 이용 가이드</button>
+  <button onclick="openShare()">🔗 서명 링크 공유</button>
+  <button onclick="openScan()">📷 서명 QR 스캔</button>
+  <button onclick="savePdf()">📄 PDF 저장</button>
+  <button class="primary" onclick="sendMail()">✉️ 메일 전송</button>
+  <button onclick="resetAll()">🗑 초기화</button>
+</div>
+</header>
+
+<div id="doc">
+  <table style="border:0">
+    <tr>
+      <td style="border:0;width:60%">
+        <div class="title">보안교육일지</div>
+        <div class="date"><span id="dateText"></span> <input type="date" id="date"></div>
+      </td>
+      <td style="border:0;padding:0">
+        <table class="appr">
+          <tr><td rowspan="2" class="vert" style="width:28px;letter-spacing:4px">결재</td><td>담 당</td><td>팀 장</td></tr>
+          <tr><td class="sign" data-role="담당"></td><td class="sign" data-role="팀장"></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table style="margin-top:12px">
+    <colgroup><col style="width:15%"><col style="width:35%"><col style="width:15%"><col style="width:35%"></colgroup>
+    <tr><th>본 부</th><td><input id="hq"></td><th>팀 명</th><td><input id="team"></td></tr>
+    <tr><th>교 육 자</th><td><input id="teacher"></td><th>장 소</th><td><input id="place"></td></tr>
+    <tr><th>교육인원</th><td colspan="3">대상 : <input id="cnt" style="width:50px"> 명 &nbsp; 참석 : <input id="att" style="width:50px"> 명 &nbsp; 미참석 : <input id="absCnt" style="width:50px"> 명 (사유 : <input id="absNames" style="width:38%" placeholder="예) 홍길동 휴가">)</td></tr>
+    <tr><th>교육주제</th><td colspan="3"><input id="topic"></td></tr>
+    <tr><td class="vert">교육내용</td><td colspan="3"><textarea id="content" rows="22" placeholder="■ 대상 시스템 :&#10;■ 교육내용&#10;1. ..."></textarea></td></tr>
+    <tr><td class="vert">교육사진</td><td colspan="3">
+      <div class="photo-btns">
+        <label>📷 카메라 촬영<input type="file" accept="image/*" capture="environment" hidden onchange="addPhotos(this)"></label>
+        <label>🖼 앨범에서 선택<input type="file" accept="image/*" multiple hidden onchange="addPhotos(this)"></label>
+      </div>
+      <div class="photos" id="photos"></div>
+    </td></tr>
+  </table>
+
+  <div class="page2">
+    <div class="title" style="font-size:24px">정보보안 교육 참석자 명단</div>
+    <div class="date2 dateText"></div>
+    <div class="sub-hint">📷 서명 QR을 스캔하면 빈 칸에 차례로 입력 · ✍️ [서명하기]로 이 화면에서 직접 서명 · 서명을 누르면 다시 서명</div>
+    <div class="att2" id="attWrap">
+      <table class="att">
+      <colgroup><col style="width:17%"><col style="width:28%"><col style="width:25%"><col style="width:30%"></colgroup>
+      <thead><tr><th>번호</th><th>사 번</th><th>성 명</th><th>확 인</th></tr></thead>
+      <tbody id="attL"></tbody>
+      </table>
+      <table class="att">
+      <colgroup><col style="width:17%"><col style="width:28%"><col style="width:25%"><col style="width:30%"></colgroup>
+      <thead><tr><th>번호</th><th>사 번</th><th>성 명</th><th>확 인</th></tr></thead>
+      <tbody id="attR"></tbody>
+      </table>
+    </div>
+    <button class="add" onclick="addRow();saveRows()">➕ 참석자 추가</button>
+    <button class="add" onclick="delLastRow()">➖ 마지막 행 삭제</button>
+    <button class="add" onclick="fillAbsent()">📋 미서명자 → 미참석자</button>
+    <div class="sub-hint" id="liveInfo"></div>
+  </div>
+</div>
+<div class="pop" id="shareModal" hidden>
+  <div class="mbox" style="text-align:center">
+    <div class="mtitle" id="shareTitle">🔗 휴대폰으로 QR을 찍어 서명</div>
+    <div id="qr" style="display:inline-block;margin:8px auto"></div>
+    <div id="shareUrl" style="word-break:break-all;font-size:13px;margin:8px 0"></div>
+    <div class="mbtns"><button onclick="copyLink()">링크 복사</button><button onclick="shareLink()">공유(카톡 등)</button></div>
+    <div class="mbtns"><button onclick="newSession(true)">새 서명 링크 발급</button><button class="ok" onclick="closePop('shareModal');openScan()">📷 스캔 시작</button></div>
+  </div>
+</div>
+<div class="pop" id="guideModal" hidden onclick="if(event.target===this)this.hidden=true">
+  <div class="mbox guide" style="width:min(92vw,600px)">
+    <div class="mtitle">❓ 보안교육일지 이용 가이드</div>
+    <h4>1. 교육 전 준비 (교육자)</h4>
+    <ol>
+      <li>날짜·본부·팀명·교육자·장소·교육주제·교육내용 작성, <b>교육사진</b> 추가</li>
+      <li>참석자 명단은 기본 20행(1~10 / 11~20 좌우 2단) · 하단 <b>➕ 참석자 추가</b> / <b>➖ 마지막 행 삭제</b>, 행 번호 옆 <b>✕</b>로 그 행 삭제</li>
+      <li>명단에 이름을 미리 적어 두면, 같은 이름의 서명 QR이 그 행에 들어갑니다 (안 적으면 빈 행에 차례로 입력)</li>
+    </ol>
+    <h4>2. 참석자 서명</h4>
+    <ol>
+      <li>교육자: <b>🔗 서명 링크 공유</b> → QR을 화면에 띄움</li>
+      <li>참석자: 휴대폰 카메라로 QR 촬영 → 성명·사번 입력 → 서명 → <b>서명 QR 만들기</b></li>
+      <li>참석자: 휴대폰에 뜬 <b>서명 QR</b>을 교육자에게 보여줌</li>
+    </ol>
+    <h4>3. 서명 수합 (교육자)</h4>
+    <ol>
+      <li><b>📷 서명 QR 스캔</b> → 참석자 휴대폰 화면을 카메라에 비추면 명단에 자동 입력</li>
+      <li>카메라가 안 켜지면 <b>📸 카메라 앱으로 찍어서 읽기</b> 또는 <b>🖼 QR 사진 파일로 읽기</b></li>
+      <li>휴대폰이 없는 참석자는 명단의 <b>✍️ 서명하기</b>로 이 화면에서 바로 서명</li>
+    </ol>
+    <h4>4. 마무리</h4>
+    <ol>
+      <li><b>📋 미서명자 → 미참석자</b> → 상단 교육인원의 미참석 인원·사유 칸에 입력됨 (사유는 직접 수정)</li>
+      <li>결재란(담당·팀장): 칸의 <b>📱 QR</b> → 결재자가 휴대폰으로 서명 → 서명 QR을 <b>📷 서명 QR 스캔</b> (또는 <b>✍️ 서명</b>으로 직접 서명) · 결재 서명을 누르면 지우고 다시 받을 수 있음</li>
+      <li><b>📄 PDF 저장</b> 또는 <b>✉️ 메일 전송</b></li>
+      <li>공용 PC라면 <b>🗑 초기화</b></li>
+    </ol>
+    <h4>⚠️ 알아두세요</h4>
+    <ul>
+      <li>입력 내용은 <b>이 기기의 브라우저에만</b> 저장되며 어떤 서버로도 전송되지 않습니다.</li>
+      <li>같은 기기·같은 브라우저에서만 이어서 작업할 수 있습니다. <b>교육사진과 결재란 서명은 새로고침하면 사라지니</b> PDF 저장 직전에 넣어 주세요.</li>
+      <li><b>🔗 새 서명 링크 발급</b>을 하면 이전 링크로 만든 서명 QR은 반영 시 확인을 묻습니다.</li>
+      <li>휴대폰 카메라가 안 켜지면: 카톡·네이버 앱 안이 아닌 <b>크롬·삼성인터넷·Safari</b>로 열고 카메라 권한을 허용하세요.</li>
+      <li>회사 Wi-Fi에서 안 열리면 Wi-Fi를 끄고 LTE로 접속하세요.</li>
+    </ul>
+    <div class="mbtns"><button class="ok" onclick="closePop('guideModal')">닫기</button></div>
+  </div>
+</div>
+<div class="pop" id="scanModal" hidden>
+  <div class="mbox" style="text-align:center">
+    <div class="mtitle">📷 참석자 휴대폰의 서명 QR을 카메라에 비춰 주세요</div>
+    <video id="cam" playsinline muted style="width:100%;max-height:50vh;background:#000;border-radius:6px"></video>
+    <select id="camSel" hidden onchange="startCam(this.value)" style="width:100%;padding:6px;margin-top:6px"></select>
+    <div id="scanMsg" style="margin:8px 0;font-size:14px;min-height:20px"></div>
+    <label class="add" style="display:block;border:1px dashed #888;border-radius:6px;cursor:pointer">📸 카메라 앱으로 찍어서 읽기 (카메라 권한이 안 될 때)<input type="file" accept="image/*" capture="environment" hidden onchange="scanFile(this)"></label>
+    <label class="add" style="display:block;border:1px dashed #888;border-radius:6px;cursor:pointer">🖼 QR 사진 파일로 읽기 (캡처·앨범 사진)<input type="file" accept="image/*" multiple hidden onchange="scanFile(this)"></label>
+    <div class="mbtns"><button class="ok" onclick="closeScan()">닫기</button></div>
+  </div>
+</div>
+<div id="modal" hidden>
+  <div class="mbox">
+    <div class="mtitle">서명해 주세요</div>
+    <canvas id="pad"></canvas>
+    <div class="mbtns"><button onclick="clearPad()">지우기</button><button onclick="closeSig()">취소</button><button class="ok" onclick="doneSig()">완료</button></div>
+  </div>
+</div>
+
+<script>
+window.FORM = { key:"sec_", name:"보안교육일지", ids:["date","hq","team","teacher","place","cnt","att","absCnt","absNames","topic","content"],
+  rowCells:["emp","name","sig"], split:true, absJoin:", ", signParam:"sec" };
+</script>
+<script src="form.js?v=4"></script>
+<script src="sig.js?v=4"></script>
+<script src="collect.js?v=4"></script>
+</body>
+</html>

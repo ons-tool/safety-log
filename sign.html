@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>교육 참석 서명</title>
-<script src="vendor/qrcode-generator.min.js?v=3"></script>
-<script src="sig.js?v=3"></script>
+<script src="vendor/qrcode-generator.min.js?v=4"></script>
+<script src="sig.js?v=4"></script>
 <style>
   body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
   .box { max-width:480px; margin:0 auto; padding:16px; }
@@ -28,8 +28,10 @@
   <label>성명</label>
   <input id="name" placeholder="이름 입력" autocomplete="off">
   <div id="extra">
+  <div id="deptBox">
   <label>소속</label>
   <input id="dept" placeholder="소속 입력" autocomplete="off">
+  </div>
   <label>사번</label>
   <input id="emp" placeholder="사번 입력" inputmode="numeric" autocomplete="off">
   </div>
@@ -48,8 +50,15 @@ const qs = new URLSearchParams(location.search);
 const sid = qs.get('s') || '';
 // 결재 서명 링크(r=담당/팀장)면 소속·사번 없이 성명과 서명만 받음
 const role = ['담당', '팀장'].includes(qs.get('r')) ? qs.get('r') : '';
+// 양식 구분(f=sec: 보안교육일지)이면 제목을 바꾸고 소속 칸 없이 성명·사번만 받음
+const isSec = qs.get('f') === 'sec';
+if (isSec) {
+  document.getElementById('title').textContent = '✍️ 정보보안 교육 참석 서명';
+  document.title = '정보보안 교육 참석 서명';
+  document.getElementById('deptBox').hidden = true;
+}
 if (role) {
-  document.getElementById('title').textContent = `✍️ 결재 서명 (${role})`;
+  document.getElementById('title').textContent = `✍️ ${isSec ? '보안교육일지 ' : ''}결재 서명 (${role})`;
   document.title = `결재 서명 (${role})`;
   document.getElementById('extra').hidden = true;
 }

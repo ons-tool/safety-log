@@ -5,88 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>안전교육일지</title>
 <script src="vendor/html2pdf.bundle.min.js"></script>
-<script src="vendor/qrcode-generator.min.js?v=3"></script>
+<script src="vendor/qrcode-generator.min.js?v=4"></script>
 <script src="vendor/jsQR.js"></script>
-<style>
-  body { margin:0; background:#eef0f3; font-family:"Malgun Gothic",sans-serif; color:#111; }
-  .bar { position:sticky; top:0; z-index:9; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:10px; background:#1f2937; }
-  .bar button { padding:10px 16px; border:0; border-radius:6px; font-size:15px; cursor:pointer; background:#fff; }
-  .bar button.primary { background:#2563eb; color:#fff; }
-  #doc { width:794px; max-width:100%; margin:16px auto; background:#fff; padding:28px; box-sizing:border-box; }
-  table { width:100%; border-collapse:collapse; table-layout:fixed; }
-  td, th { border:1px solid #333; padding:4px 6px; font-size:13px; vertical-align:middle; }
-  th { background:#e5e7eb; font-weight:600; letter-spacing:4px; }
-  input, textarea { width:100%; box-sizing:border-box; border:0; font:inherit; background:transparent; padding:2px; }
-  input:focus, textarea:focus { outline:2px solid #93c5fd; background:#f8fbff; }
-  textarea { resize:vertical; min-height:60px; line-height:1.5; }
-  .title { font-size:32px; font-weight:800; text-align:center; letter-spacing:8px; }
-  .date { text-align:center; margin-top:8px; }
-  .date #dateText { font-size:16px; font-weight:600; }
-  .date input { width:auto; border:1px solid #999; border-radius:4px; padding:4px; }
-  .pdf-mode .date input, .pdf-mode .sbtn { display:none !important; }
-  .appr td { height:22px; text-align:center; }
-  .appr .sign { height:60px; padding:0; }
-  .clr { font-size:11px; padding:2px 6px; margin-top:2px; }
-  .page2 { margin-top:30px; }
-  .att td { height:44px; text-align:center; padding:0 4px; }
-  .add { margin-top:8px; padding:8px 14px; }
-  .pdf-mode .clr, .pdf-mode .add, .pdf-mode .sub-hint, .pdf-mode .rdel { display:none !important; }
-  .att td:first-child { white-space:nowrap; padding:0 2px; }
-  .rdel { margin-left:3px; padding:0 4px; border:1px solid #dc2626; color:#dc2626; background:#fff; border-radius:3px; font-size:11px; line-height:16px; cursor:pointer; }
-  .appr-btns { flex-direction:column; gap:3px; } .appr-btns .sbtn { padding:2px 6px; font-size:11px; white-space:nowrap; }
-  @media (max-width:600px){ .appr-btns .sbtn { padding:1px 3px; font-size:10px; } .rdel { padding:0 2px; margin-left:1px; } }
-  .sigbox { height:100%; display:flex; align-items:center; justify-content:center; }
-  .appr .sigbox { height:60px; } .att .sigbox { height:44px; }
-  .sigbox img { max-height:100%; max-width:100%; cursor:pointer; }
-  .sbtn { padding:4px 8px; border:1px solid #2563eb; color:#2563eb; background:#fff; border-radius:4px; font-size:12px; }
-  .lists { display:flex; gap:12px; margin-top:8px; align-items:flex-start; }
-  .col-att { flex:2.3; } .col-abs { flex:1; }
-  .ltitle { font-weight:700; margin-bottom:4px; }
-  #modal { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:20; display:flex; align-items:center; justify-content:center; }
-  #modal[hidden], .pop[hidden] { display:none; }
-  .pop { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:20; display:flex; align-items:center; justify-content:center; }
-  .memtbl td { padding:2px; text-align:center; } .memtbl input[type=text] { border-bottom:1px solid #ccc; }
-  .pop .mbox { max-height:90vh; overflow:auto; }
-  .pdf-mode #liveInfo { display:none !important; }
-  .mbox { background:#fff; border-radius:10px; padding:16px; width:min(92vw,520px); }
-  .mtitle { font-weight:700; margin-bottom:8px; }
-  .guide { font-size:14px; line-height:1.6; } .guide h4 { margin:14px 0 4px; color:#1d4ed8; } .guide ol, .guide ul { margin:0; padding-left:20px; }
-  #pad { width:100%; height:220px; border:2px dashed #999; border-radius:6px; touch-action:none; display:block; background:#fffef5; }
-  .mbtns { display:flex; gap:8px; margin-top:10px; } .mbtns button { flex:1; padding:12px; border:0; border-radius:6px; font-size:15px; background:#e5e7eb; }
-  .mbtns .ok { background:#2563eb; color:#fff; }
-  @media (max-width:600px){ .lists{flex-direction:column;} .col-abs{width:100%;} }
-  .sub-hint { font-size:12px; color:#666; text-align:right; }
-  .vert { writing-mode:vertical-rl; text-align:center; letter-spacing:10px; background:#e5e7eb; font-weight:600; }
-  .photos { display:grid; grid-template-columns:1fr 1fr; gap:6px; min-height:120px; }
-  .photos figure { margin:0; position:relative; }
-  .photos img { width:100%; height:200px; object-fit:cover; display:block; }
-  .photos .del { position:absolute; top:4px; right:4px; background:#dc2626; color:#fff; border:0; border-radius:50%; width:24px; height:24px; }
-  .photo-btns { display:flex; gap:6px; margin-bottom:6px; }
-  .photo-btns label { flex:1; text-align:center; padding:8px; background:#f3f4f6; border:1px dashed #888; border-radius:6px; cursor:pointer; }
-  .pdf-mode .photo-btns, .pdf-mode .del { display:none !important; }
-  .pdf-mode textarea { resize:none; overflow:hidden; }
-  /* PDF 전용 고정 레이아웃 (휴대폰 화면 규칙 무시) */
-  .pdf-sheet { width:733px !important; max-width:none !important; margin:0 !important; padding:2px 3px 12px !important; box-sizing:border-box !important; background:#fff; }
-  .pdf-sheet .page2 { padding-bottom:4px; }
-  .pdf-sheet td, .pdf-sheet th { font-size:12px !important; }
-  .pdf-sheet .title { font-size:30px !important; } .pdf-sheet .page2 .title { font-size:22px !important; }
-  .pdf-sheet .photos { grid-template-columns:1fr 1fr !important; } .pdf-sheet .photos img { height:180px; }
-  .pdf-sheet .lists { flex-direction:row !important; }
-  .pdf-sheet .pdf-text { white-space:pre-wrap; word-break:break-all; line-height:1.5; min-height:40px; padding:2px; }
-  .pdf-sheet .pdf-val { white-space:pre-wrap; word-break:break-all; }
-  .pdf-sheet .page2 { margin-top:0; }
-  @media (max-width:600px){ #doc{padding:10px;} td,th{font-size:11px;} .title{font-size:22px;} .photos{grid-template-columns:1fr;} }
-</style>
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
+<header class="top">
+<nav class="tabs"><a href="index.html" class="on">🦺 안전교육일지</a><a href="security.html">🔒 보안교육일지</a></nav>
 <div class="bar">
   <button onclick="document.getElementById('guideModal').hidden=false">❓ 이용 가이드</button>
   <button onclick="openShare()">🔗 서명 링크 공유</button>
   <button onclick="openScan()">📷 서명 QR 스캔</button>
   <button onclick="savePdf()">📄 PDF 저장</button>
   <button class="primary" onclick="sendMail()">✉️ 메일 전송</button>
-  <button onclick="if(confirm('입력 내용과 참석자 명단·서명을 모두 지울까요? (진행 중인 서명 링크도 새로 바뀝니다)')){try{localStorage.removeItem('safetyLog');localStorage.removeItem('signSession');localStorage.removeItem('attRows')}catch(e){}location.reload()}">🗑 초기화</button>
+  <button onclick="resetAll()">🗑 초기화</button>
 </div>
+</header>
 
 <div id="doc">
   <table style="border:0">
@@ -123,7 +57,7 @@
   <div class="page2">
     <div class="title" style="font-size:24px">교육 참석자 명단</div>
     <div class="sub-hint">📷 서명 QR을 스캔하면 빈 칸에 차례로 입력 · ✍️ [서명하기]로 이 화면에서 직접 서명 · 서명을 누르면 다시 서명</div>
-    <div class="lists"><div class="col-att"><div class="ltitle">■ 참석자</div><table class="att">
+    <div class="lists"><div class="col-att"><div class="ltitle">■ 참석자</div><table class="att" id="attWrap">
       <colgroup><col style="width:10%"><col style="width:22%"><col style="width:18%"><col style="width:18%"><col style="width:32%"></colgroup>
       <thead><tr><th>번호</th><th>소 속</th><th>사 번</th><th>성 명</th><th>서 명</th></tr></thead>
       <tbody id="attBody"></tbody>
@@ -208,152 +142,11 @@
 </div>
 
 <script>
-const ids = ['date','hq','team','teacher','place','cnt','att','note','topic','content','absCnt','absNames'];
-let photos = [];
-const MAIL_TO = '';
-
-// 입력값 자동 저장/복원
-function save(){ try{ const o={}; ids.forEach(i=>o[i]=document.getElementById(i).value); localStorage.setItem('safetyLog',JSON.stringify(o)); }catch(e){} }
-try{ const o=JSON.parse(localStorage.getItem('safetyLog')||'{}'); ids.forEach(i=>{ if(o[i]!=null) document.getElementById(i).value=o[i]; }); }catch(e){}
-ids.forEach(i=>document.getElementById(i).addEventListener('input',save));
-
-// 사진: 용량 줄이기 위해 1280px로 축소
-function addPhotos(input){
-  [...input.files].forEach(f=>{
-    const img=new Image();
-    img.onload=()=>{
-      const s=Math.min(1,1280/Math.max(img.width,img.height));
-      const c=document.createElement('canvas'); c.width=img.width*s; c.height=img.height*s;
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      photos.push(c.toDataURL('image/jpeg',0.8)); renderPhotos(); URL.revokeObjectURL(img.src);
-    };
-    img.src=URL.createObjectURL(f);
-  });
-  input.value='';
-}
-function renderPhotos(){
-  document.getElementById('photos').innerHTML = photos.map((p,i)=>
-    `<figure><img src="${p}"><button class="del" onclick="photos.splice(${i},1);renderPhotos()">×</button></figure>`).join('');
-}
-
-// 서명: [서명하기] 버튼 → 팝업에서 서명 → 칸에 이미지로 삽입
-const pad=document.getElementById('pad'), pctx=pad.getContext('2d');
-let target=null, drawn=false;
-function sigCell(){ return `<div class="sigbox"><button class="sbtn" onclick="openSig(this.parentNode)">✍️ 서명하기</button></div>`; }
-function openSig(box){
-  target=box; document.getElementById('modal').hidden=false;
-  const r=pad.getBoundingClientRect(); pad.width=r.width*2; pad.height=r.height*2;
-  pctx.setTransform(2,0,0,2,0,0); pctx.lineWidth=2.5; pctx.lineCap='round'; pctx.lineJoin='round'; drawn=false;
-}
-function closeSig(){ document.getElementById('modal').hidden=true; target=null; }
-function clearPad(){ pctx.clearRect(0,0,pad.width,pad.height); drawn=false; }
-function doneSig(){
-  if(!drawn){ alert('서명을 입력해 주세요.'); return; }
-  setSigImg(target, pad.toDataURL('image/png'));
-  closeSig();
-}
-// 서명 이미지 넣기: 참석자 칸은 누르면 다시 서명, 결재란은 누르면 서명을 지우고 버튼(직접/QR)으로 되돌림
-function setSigImg(box, src){
-  const appr=box.closest('.appr td.sign');
-  box.innerHTML=`<img src="${src}" title="${appr?'눌러서 서명 지우기':'눌러서 다시 서명'}">`;
-  box.querySelector('img').onclick = appr
-    ? function(){ if(confirm(`${appr.dataset.role} 결재 서명을 지우고 다시 받을까요?`)) appr.innerHTML=apprCell(appr.dataset.role); }
-    : function(){ openSig(this.parentNode); };
-  if(!appr && typeof saveRows==='function'){ updateCount(); saveRows(); }
-}
-(()=>{ let on=false;
-  const pt=e=>{ const b=pad.getBoundingClientRect(); return [e.clientX-b.left,e.clientY-b.top]; };
-  pad.onpointerdown=e=>{ on=true; pad.setPointerCapture(e.pointerId); pctx.beginPath(); pctx.moveTo(...pt(e)); };
-  pad.onpointermove=e=>{ if(on){ pctx.lineTo(...pt(e)); pctx.stroke(); drawn=true; } };
-  pad.onpointerup=pad.onpointercancel=()=>on=false;
-})();
-// 결재란: 직접 서명 + 결재자 휴대폰 QR 서명
-function apprCell(role){ return `<div class="sigbox appr-btns"><button class="sbtn" onclick="openSig(this.parentNode)">✍️ 서명</button><button class="sbtn" onclick="openShare('${role}')">📱 QR</button></div>`; }
-const ROWS_DEFAULT=20;
-function addRow(dept='',name='',emp=''){
-  const tb=document.getElementById('attBody');
-  const tr=tb.insertRow(); tr.dataset.name=name;
-  tr.innerHTML=`<td><span class="rn"></span><button class="rdel" title="이 행 삭제" onclick="delRow(this.closest('tr'))">✕</button></td><td><input></td><td><input></td><td><input></td><td class="sigcell">${sigCell()}</td>`;
-  const [d,e,nm]=tr.querySelectorAll('input'); d.value=dept; e.value=emp; nm.value=name;
-  renumber();
-  return tr;
-}
-function renumber(){ [...document.getElementById('attBody').rows].forEach((tr,i)=>tr.querySelector('.rn').textContent=i+1); }
-function delRow(tr){
-  const name=tr.querySelectorAll('input')[2].value.trim(), signed=!!tr.querySelector('.sigbox img');
-  if((name||signed||tr.querySelectorAll('input')[0].value.trim()||tr.querySelectorAll('input')[1].value.trim())
-     && !confirm(`${tr.querySelector('.rn').textContent}번 ${name?name+'님 ':''}행을 삭제할까요?${signed?'\n(받은 서명도 함께 지워집니다)':''}`)) return;
-  tr.remove(); renumber();
-  if(typeof updateCount==='function') updateCount();
-  if(typeof saveRows==='function') saveRows();
-}
-function delLastRow(){
-  const tb=document.getElementById('attBody');
-  if(!tb.rows.length) return alert('삭제할 행이 없습니다.');
-  delRow(tb.rows[tb.rows.length-1]);
-}
-document.querySelectorAll('.appr .sign').forEach(td=>td.innerHTML=apprCell(td.dataset.role));
-for(let i=0;i<ROWS_DEFAULT;i++) addRow();
-
-// 날짜: 달력 선택 → "2026년 10월 12일" 표시
-function showDate(){ const v=document.getElementById('date').value.split('-');
-  document.getElementById('dateText').textContent = v.length===3 ? `${v[0]}년 ${+v[1]}월 ${+v[2]}일` : '____년 __월 __일'; }
-const dt=document.getElementById('date'); if(!dt.value) dt.valueAsDate=new Date(); showDate();
-dt.addEventListener('change',()=>{ showDate(); save(); });
-
-function fileName(){
-  const v=i=>document.getElementById(i).value.trim();
-  return `안전교육일지_${v('date').replaceAll('-','')}_${v('team')||'팀'}.pdf`;
-}
-
-// PDF: 화면 크기와 무관하게 A4 폭(194mm≈733px)의 복제본을 만들어 변환
-async function makePdf(){
-  const doc=document.getElementById('doc'), clone=doc.cloneNode(true);
-  clone.removeAttribute('id'); clone.classList.add('pdf-mode','pdf-sheet');
-  // 복제본 안의 id 제거 (원본 명단 #attBody 등과 겹쳐 저장·집계 코드가 복제본을 읽지 않도록)
-  clone.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
-  // 입력칸 → 일반 글자로 바꿔 잘림 방지
-  const src=doc.querySelectorAll('input,textarea'), dst=clone.querySelectorAll('input,textarea');
-  dst.forEach((el,i)=>{
-    const o=src[i];
-    if(['file','date','checkbox'].includes(o.type)) return el.remove();
-    const t=document.createElement(o.tagName==='TEXTAREA'?'div':'span');
-    t.className=o.tagName==='TEXTAREA'?'pdf-text':'pdf-val'; t.textContent=o.value;
-    if(el.style.width) t.style.display='inline-block', t.style.minWidth=el.style.width;
-    el.replaceWith(t);
-  });
-  const wrap=document.createElement('div'); wrap.style.cssText='position:absolute;left:0;top:0;width:733px;z-index:-1';
-  const sx=scrollX, sy=scrollY; scrollTo(0,0);
-  wrap.appendChild(clone); document.body.appendChild(wrap);
-  try{
-    return await html2pdf().set({
-      margin:8, filename:fileName(), image:{type:'jpeg',quality:0.95},
-      html2canvas:{scale:2, width:733, windowWidth:733, scrollX:0, scrollY:0, x:0, y:0}, jsPDF:{unit:'mm',format:'a4'},
-      pagebreak:{mode:['css','legacy'], before:'.page2', avoid:['tr','figure','.att tr']}
-    }).from(clone).outputPdf('blob');
-  } finally { wrap.remove(); scrollTo(sx,sy); }
-}
-
-async function savePdf(){
-  const blob=await makePdf();
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fileName(); a.click();
-}
-
-async function sendMail(){
-  const blob=await makePdf();
-  const file=new File([blob],fileName(),{type:'application/pdf'});
-  const subject=`[안전교육일지] ${document.getElementById('topic').value}`;
-  // 휴대폰: 공유창 → 메일앱에 PDF 첨부
-  if(navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file], title:subject, text:subject}); return; }catch(e){ if(e.name==='AbortError') return; }
-  }
-  // PC: PDF 다운로드 후 메일 창 열기 (첨부는 직접)
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fileName(); a.click();
-  alert('PC에서는 메일 자동 첨부가 불가합니다.\n다운로드된 PDF를 메일에 직접 첨부해 주세요.');
-  location.href=`mailto:${MAIL_TO}?subject=${encodeURIComponent(subject)}`;
-}
+window.FORM = { key:"", name:"안전교육일지", ids:["date","hq","team","teacher","place","cnt","att","note","topic","content","absCnt","absNames"],
+  rowCells:["dept","emp","name","sig"], split:false, absJoin:"\n", signParam:"" };
 </script>
-<script src="sig.js?v=3"></script>
-<script src="collect.js?v=3"></script>
+<script src="form.js?v=4"></script>
+<script src="sig.js?v=4"></script>
+<script src="collect.js?v=4"></script>
 </body>
 </html>

@@ -10,8 +10,8 @@ store.del('members'); // 예전 팀원 목록 기능에서 저장한 명단은 �
 
 // ── 서명 링크 (링크에는 세션 코드만 들어감, 개인정보 없음) ──
 const newCode = () => Math.random().toString(36).slice(2, 8).padEnd(6, '0');
-let sessionId = store.get('signSession', null);
-if (!sessionId) { sessionId = newCode(); store.set('signSession', sessionId); }
+let sessionId = store.get(K('signSession'), null);
+if (!sessionId) { sessionId = newCode(); store.set(K('signSession'), sessionId); }
 let shareRole = ''; // '' = 참석자, '담당' / '팀장' = 결재
 
 function closePop(id) { document.getElementById(id).hidden = true; }
@@ -19,11 +19,12 @@ function closePop(id) { document.getElementById(id).hidden = true; }
 function newSession(ask) {
   if (ask && !confirm('새 링크를 발급하면 이전 링크로 만든 서명 QR은 스캔할 때 반영 여부를 묻습니다.\n(명단과 이미 받은 서명은 그대로 유지됩니다) 계속할까요?')) return;
   sessionId = newCode();
-  store.set('signSession', sessionId);
+  store.set(K('signSession'), sessionId);
   openShare(shareRole);
 }
 function signUrl(role) {
-  return new URL(`sign.html?s=${sessionId}` + (role ? `&r=${encodeURIComponent(role)}` : ''), location.href).href;
+  return new URL(`sign.html?s=${sessionId}` + (FORM.signParam ? `&f=${FORM.signParam}` : '')
+    + (role ? `&r=${encodeURIComponent(role)}` : ''), location.href).href;
 }
 function openShare(role) {
   shareRole = role === '담당' || role === '팀장' ? role : '';
@@ -42,7 +43,7 @@ async function copyLink() {
 }
 async function shareLink() {
   const url = document.getElementById('shareUrl').textContent;
-  if (navigator.share) { try { await navigator.share({ title: shareRole ? `안전교육일지 결재 서명 (${shareRole})` : '안전교육 참석 서명', url }); } catch (e) {} }
+  if (navigator.share) { try { await navigator.share({ title: shareRole ? `${FORM.name} 결재 서명 (${shareRole})` : `${FORM.name} 참석 서명`, url }); } catch (e) {} }
   else copyLink();
 }
 
@@ -63,6 +64,7 @@ async function startCam(deviceId) {
   try {
     camStream = await navigator.mediaDevices.getUserMedia({ video: deviceId ? { deviceId: { exact: deviceId } } : true });
   } catch (e) {
+    if (Date.now() < msgHold) return; // 그사이 사진 파일로 읽은 결과가 떠 있으면 덮어쓰지 않음
     msg.textContent = {
       NotAllowedError: /KAKAOTALK|NAVER|Instagram|FBAN|Line\//i.test(navigator.userAgent)
         ? '❌ 앱 안의 브라우저(카톡·네이버 등)에서는 카메라를 쓸 수 없습니다. 메뉴 → [다른 브라우저로 열기]를 누르거나, 아래 [📸 카메라 앱으로 찍어서 읽기]를 이용하세요.'
@@ -159,35 +161,35 @@ function applySig(text) {
     return `✅ 결재(${s.role}) ${s.name}님 서명 반영`;
   }
   // 참석자 서명 → 같은 이름 행, 없으면 첫 빈 행, 없으면 행 추가
-  const tb = document.getElementById('attBody');
-  let tr = [...tb.rows].find(t => t.querySelectorAll('input')[2].value.trim() === s.name);
+  const rows = attRows();
+  let tr = rows.find(t => fieldVal(t, 'name') === s.name);
   if (tr && tr.querySelector('.sigbox img') && !confirm(`${s.name}님은 이미 서명했습니다. 새 서명으로 바꿀까요?`)) return `${s.name}님: 기존 서명 유지`;
-  if (!tr) tr = [...tb.rows].find(t => !t.querySelectorAll('input')[2].value.trim() && !t.querySelector('.sigbox img')) || addRow();
-  const [d, e, n] = tr.querySelectorAll('input');
-  n.value = s.name; if (s.dept) d.value = s.dept; if (s.emp) e.value = s.emp;
+  if (!tr) tr = rows.find(t => !fieldVal(t, 'name') && !t.querySelector('.sigbox img')) || addRow();
+  setField(tr, 'name', s.name); if (s.dept) setField(tr, 'dept', s.dept); if (s.emp) setField(tr, 'emp', s.emp);
   setSigImg(tr.querySelector('.sigbox'), png);
   return `✅ ${s.name}님 서명 반영 (${document.getElementById('att').value}명 완료)`;
 }
 function updateCount() {
-  const rows = [...document.querySelectorAll('#attBody tr')].filter(tr => tr.querySelectorAll('input')[2].value.trim());
-  const signed = [...document.querySelectorAll('#attBody tr')].filter(tr => tr.querySelector('.sigbox img')).length;
+  const rows = attRows();
+  const named = rows.filter(tr => fieldVal(tr, 'name')).length;
+  const signed = rows.filter(tr => tr.querySelector('.sigbox img')).length;
   document.getElementById('att').value = signed; save();
-  document.getElementById('liveInfo').textContent = `📷 스캔 수합 · 서명 ${signed} / ${rows.length}명`;
+  document.getElementById('liveInfo').textContent = `📷 스캔 수합 · 서명 ${signed} / ${named}명`;
 }
 
-// ── 명단·서명을 이 PC에 저장/복원 (새로고침 대비) ──
+// ── 명단·서명을 이 기기에 저장/복원 (새로고침 대비, 양식별로 따로 저장) ──
 function saveRows() {
-  store.set('attRows', [...document.querySelectorAll('#attBody tr')].map(tr => {
-    const [d, e, n] = tr.querySelectorAll('input'), img = tr.querySelector('.sigbox img');
-    return { dept: d.value, emp: e.value, name: n.value, img: img ? img.src : '' };
+  store.set(K('attRows'), attRows().map(tr => {
+    const img = tr.querySelector('.sigbox img');
+    return { dept: fieldVal(tr, 'dept'), emp: fieldVal(tr, 'emp'), name: fieldVal(tr, 'name'), img: img ? img.src : '' };
   }));
 }
-document.getElementById('attBody').addEventListener('input', saveRows);
-new MutationObserver(saveRows).observe(document.getElementById('attBody'), { childList: true, subtree: true });
+document.getElementById('attWrap').addEventListener('input', saveRows);
+new MutationObserver(saveRows).observe(document.getElementById('attWrap'), { childList: true, subtree: true });
 (() => {
-  const rows = store.get('attRows', null);
+  const rows = store.get(K('attRows'), null);
   if (!Array.isArray(rows)) return;
-  const tb = document.getElementById('attBody'); tb.innerHTML = '';
+  clearRows();
   rows.forEach(r => {
     const tr = addRow(r.dept, r.name, r.emp);
     if (r.img) {
@@ -197,17 +199,15 @@ new MutationObserver(saveRows).observe(document.getElementById('attBody'), { chi
     }
   });
   // 예전 버전(기본 5~10행)에서 저장된 명단은 한 번만 기본 20행까지 채움
-  if (!store.get('rows20', false)) { for (let i = tb.rows.length; i < ROWS_DEFAULT; i++) addRow(); store.set('rows20', true); }
+  if (!store.get(K('rows20'), false)) { for (let i = attRows().length; i < ROWS_DEFAULT; i++) addRow(); store.set(K('rows20'), true); }
   if (rows.some(r => r.name || r.img)) updateCount();
 })();
-store.set('rows20', true);
+store.set(K('rows20'), true);
 
 // 미서명자 → 미참석자 칸
 function fillAbsent() {
-  const rows = [...document.querySelectorAll('#attBody tr')].filter(tr =>
-    tr.querySelectorAll('input')[2].value.trim() && !tr.querySelector('.sigbox img'));
-  const names = rows.map(tr => tr.querySelectorAll('input')[2].value.trim());
+  const names = attRows().filter(tr => fieldVal(tr, 'name') && !tr.querySelector('.sigbox img')).map(tr => fieldVal(tr, 'name'));
   document.getElementById('absCnt').value = names.length;
-  document.getElementById('absNames').value = names.join('\n');
+  document.getElementById('absNames').value = names.join(FORM.absJoin || '\n');
   save();
 }
