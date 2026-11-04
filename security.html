@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>보안교육일지</title>
 <script src="vendor/html2pdf.bundle.min.js"></script>
-<script src="vendor/qrcode-generator.min.js?v=6"></script>
+<script src="vendor/qrcode-generator.min.js?v=8"></script>
 <script src="vendor/jsQR.js"></script>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
-<body>
+<body class="theme">
+<div class="brandbar"><span class="logo">SAFETY</span><a class="brand" href="index.html">안전·보안 업무 일지</a></div>
+<div class="stripe"></div>
 <header class="top">
-<nav class="tabs"><a href="index.html">🦺 안전교육일지</a><a href="security.html" class="on">🔒 보안교육일지</a><a href="supply.html">🧰 안전용품 지급대장</a></nav>
+<nav class="tabs"><a href="index.html" class="home" title="메인 화면">🏠 메인</a><a href="safety.html">🦺 안전교육일지</a><a href="security.html" class="on">🔒 보안교육일지</a><a href="supply.html">🧰 안전용품 지급대장</a></nav>
 <div class="bar">
   <button onclick="document.getElementById('guideModal').hidden=false">❓ 이용 가이드</button>
   <button onclick="openShare()">🔗 서명 링크 공유</button>
@@ -148,8 +150,8 @@ window.FORM = { key:"sec_", name:"보안교육일지",
   fileName: () => [fileMonth(), joinName("보안교육", fileVal("topic"), fileVal("team"))].filter(Boolean).join("_"), ids:["date","hq","team","teacher","place","cnt","att","absCnt","absNames","topic","content"],
   rowCells:["emp","name","sig"], split:true, absJoin:", ", signParam:"sec" };
 </script>
-<script src="form.js?v=6"></script>
-<script src="sig.js?v=6"></script>
-<script src="collect.js?v=6"></script>
+<script src="form.js?v=8"></script>
+<script src="sig.js?v=8"></script>
+<script src="collect.js?v=8"></script>
 </body>
 </html>

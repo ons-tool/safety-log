@@ -102,3 +102,37 @@ textarea { resize:vertical; min-height:60px; line-height:1.5; }
 .team-box { font-weight:600; white-space:nowrap; }
 .team-box input { width:160px; border-bottom:1px solid #999; font-weight:400; }
 .pdf-mode .team-box input, .pdf-mode .team-box .pdf-val { border:0; }
+/* 배너의 메인(홈) 버튼: 좁게 */
+.tabs a.home { flex:0 0 auto; padding-left:14px; padding-right:14px; color:#d1d5db; border-right:1px solid #374151; }
+@media (max-width:600px){ .tabs a.home { padding-left:8px; padding-right:8px; } }
+
+/* ───────── 디자인: 세이프티 오렌지 (2026-11) ───────── */
+:root { --orange:#f97316; --orange-d:#ea580c; --orange-m:#fdba74; --orange-l:#fed7aa; --orange-bg:#fff7ed; --black:#1c1917; --gold:#ca8a04; --ink:#1c1917; --sub:#57534e; --paper-bg:#fffaf5; }
+body.theme { background:var(--paper-bg); color:var(--ink); }
+/* 머리글: 로고 배지 + 사이트 이름 + 안전 줄무늬 (스크롤하면 올라감) */
+.brandbar { background:var(--black); color:#fff; display:flex; align-items:center; gap:12px; padding:12px 24px; }
+.brandbar .logo { background:var(--orange); color:var(--black); font-weight:900; padding:5px 10px; border-radius:6px; font-size:13px; letter-spacing:1px; }
+.brandbar .brand { color:#fff; text-decoration:none; font-weight:800; font-size:18px; }
+.brandbar .today { margin-left:auto; color:#d6d3d1; font-size:13px; }
+.stripe { height:8px; background:repeating-linear-gradient(-45deg,var(--orange) 0 16px,var(--black) 16px 32px); }
+/* 배너(탭) + 버튼 줄 */
+.theme .tabs { background:var(--black); }
+.theme .tabs a { color:#a8a29e; }
+.theme .tabs a.on { color:#fff; background:#292524; border-bottom-color:var(--orange); }
+.theme .tabs a:not(.on):hover { color:#fff; }
+.theme .tabs a.home { color:#fdba74; border-right-color:#44403c; }
+.theme .bar { background:var(--orange-bg); border-bottom:2px solid var(--orange-l); }
+.theme .bar button { background:#fff; border:2px solid var(--orange-m); color:var(--ink); font-weight:700; }
+.theme .bar button:hover { background:#ffedd5; }
+.theme .bar button.primary { background:var(--orange-d); border-color:var(--orange-d); color:#fff; }
+/* 양식 종이와 화면 안 버튼 */
+.theme #doc { border:1px solid #e7e5e4; box-shadow:0 2px 10px rgba(28,25,23,.06); border-radius:4px; }
+.theme .sbtn { border-color:var(--orange-d); color:var(--orange-d); }
+.theme .add { background:#fff; border:2px solid var(--orange-m); border-radius:10px; font-weight:700; color:var(--ink); cursor:pointer; }
+.theme .add:hover { background:#ffedd5; }
+.theme .photo-btns label { background:var(--orange-bg); border-color:var(--orange-m); }
+.theme .mbtns .ok { background:var(--orange-d); }
+.theme .guide h4 { color:var(--orange-d); }
+.theme input:focus, .theme textarea:focus { outline-color:var(--orange-m); background:#fffbf5; }
+.theme .sup .chk { accent-color:var(--orange-d); }
+@media (max-width:600px){ .brandbar { padding:10px 14px; } .brandbar .brand { font-size:15px; } .brandbar .today { display:none; } .stripe { height:6px; } }
