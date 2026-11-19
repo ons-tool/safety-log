@@ -136,3 +136,13 @@ body.theme { background:var(--paper-bg); color:var(--ink); }
 .theme input:focus, .theme textarea:focus { outline-color:var(--orange-m); background:#fffbf5; }
 .theme .sup .chk { accent-color:var(--orange-d); }
 @media (max-width:600px){ .brandbar { padding:10px 14px; } .brandbar .brand { font-size:15px; } .brandbar .today { display:none; } .stripe { height:6px; } }
+/* 안전용품 지급 이력 */
+.hist-tools { display:flex; gap:8px; margin:10px 0 8px; flex-wrap:wrap; }
+.hist-tools input, .hist-tools select { flex:1; min-width:160px; padding:9px; font-size:14px; border:1px solid #bbb; border-radius:6px; }
+.hist-wrap { max-height:46vh; overflow:auto; border:1px solid #e5e7eb; border-radius:6px; }
+table.hist { width:100%; border-collapse:collapse; font-size:13px; }
+table.hist th { position:sticky; top:0; background:#fff7ed; text-align:left; }
+table.hist th, table.hist td { border-bottom:1px solid #eee; padding:7px 8px; vertical-align:top; }
+table.hist .idel { border:0; background:none; color:#b91c1c; cursor:pointer; font-size:14px; }
+.hist-empty { text-align:center; color:#777; padding:24px !important; }
+.hist-imp { flex:1; padding:12px; border-radius:6px; font-size:15px; background:#e5e7eb; text-align:center; cursor:pointer; }
